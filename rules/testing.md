@@ -1,0 +1,3 @@
+- if the user asks you to manually test something then bring up required resources and:
+    - if its frontend then leverage the playwright mcp
+    - if its backend and directly make calls via api

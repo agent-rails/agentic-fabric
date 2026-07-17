@@ -1,0 +1,55 @@
+- Commit philosophy
+  - Commit often in small atomic commits such that checking out at any commit does not lead to broken code.
+  - Do not just add all files to a commit as this may cause unrelated changes to be lumped together
+  - If there are git hooks in place never try to bypass them. It is your responsibility to locate the problem and fix it before moving on.
+- commit identity
+    - never add anyone as a co author unless the user specifies.
+- Semantic commits
+  - Format: `<type>(<scope>): <subject>` (scope optional, subject lowercase, no period)
+  - Types:
+    - `feat`: new feature or capability
+    - `fix`: bug fix
+    - `refactor`: code restructuring (no behavior change)
+    - `test`: adding/updating tests
+    - `docs`: documentation changes
+    - `chore`: maintenance (deps, build, tooling)
+    - `style`: formatting only (no logic changes)
+    - `perf`: performance improvements
+  - Subject: imperative mood ("add feature" not "added feature")
+  - Examples:
+    - `feat: add wallet connection flow`
+    - `fix(api): handle rate limit errors`
+    - `refactor(auth): extract token validation`
+    - `test: add coverage for edge cases`
+  - Breaking changes: add `!` after type/scope (`feat!: remove deprecated API`)
+  - If you feel you want to add scope then look at previous commits to see how the repo generally likes to add scopes.
+  - Body (optional): blank line after subject, wrap at 72 chars, explain what/why not how
+- git hooks
+    - if there are git hooks and they fail do not ever use --no-verify to skip it unless the user tells you so. If there are linting, test, or other errors fix them before moving forward
+- git work tree
+    - _worktrees directory is automatically created by your repo-sync tooling (creates dir & adds to git exclude)
+    - all git worktrees should be placed within their respective repo root in _worktrees directory
+    - use your worktree-jump alias to navigate to worktrees
+    - if the user asks you to setup default worktrees, check that these don't exist already then:
+        1. Create 3 worktrees titled: alpha, omega, delta
+        2. Each attached to a branch using the pattern: `youralias/worktree/{name}`
+           - Always the `youralias` branch alias — NOT the GitHub handle `your-github-handle`. Do not detect the GH username; the alias is fixed.
+           - Enforced by the branch-prefix PreToolUse hook (`~/.claude/scripts/enforce-branch-prefix.sh`); a non-`youralias/` worktree branch is blocked.
+        3. Resulting branches:
+           - youralias/worktree/alpha
+           - youralias/worktree/omega
+           - youralias/worktree/delta
+- Public content discipline (PRs, commits, issues, published writing)
+    - Never name internal agents in user-facing git output
+    - Applies to: PR titles, PR bodies, PR comments, PR review bodies, issue titles/bodies/comments, commit messages, published blogs / external technical writing
+    - Forbidden names: sentinel, spock, architect-reviewer, ai-architect, sentinel-scribe, sentinel-fetcher, voltage, voltage-scribe, voltage-fetcher, voltage-reporter, orchestrator, researcher, implementer, debugger, tester, plus any custom subagent slug
+    - Reframe to generic role descriptions
+        - "sentinel review" → "review" / "DevSecOps review"
+        - "spock cross-vendor cascade" → "cross-vendor review" / "second-vendor review"
+        - "architect-reviewer found" → "architectural review found"
+        - "ai-architect" → "AI architecture review"
+        - "sentinel-scribe wiki update" → "review log updated"
+    - Forbidden phrases: "spock cascade", "sentinel cycle N", "ARCHITECT_INPUT", "SPOCK_INPUT", "AI_ARCHITECT_INPUT" — strip the input-block names too
+    - Reason: agents are internal tooling; surfacing names leaks implementation details, anchors reviewers on "the agent said X" rather than the substance, and dates the content as new tooling lands or changes name
+    - Reasoning summaries are fine (e.g., "found via cross-vendor review" not "spock surfaced this in cycle 2")
+    - Applies whether the content is being written, edited, or copy-pasted from internal review output

@@ -1,0 +1,91 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "your-pretool-hook",
+            "timeout": 900
+          }
+        ]
+      },
+      {
+        "matcher": "Skill",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/youruser/voltage/scripts/log-skill-invocation.sh",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/youruser/.claude/scripts/protect-gate-pages.sh",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/youruser/.claude/scripts/gh-pr-create-gate.sh",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "/Users/youruser/.claude/scripts/enforce-branch-prefix.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/youruser/.claude/hooks/scribe-nudge-mark.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "your-stop-guard",
+            "timeout": 6
+          },
+          {
+            "type": "command",
+            "command": "/Users/youruser/.claude/hooks/scribe-nudge.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/youruser/.claude/agents/voltage-reporter/session-drain-check.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
