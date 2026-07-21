@@ -21,6 +21,8 @@ Built and dogfooded daily over months of real DevOps/SRE work. Sanitized for por
 
 ## Design principles
 
+For the internals, the whys, and the decisions behind them, see [`docs/`](docs/) — [architecture](docs/ARCHITECTURE.md), [design principles](docs/DESIGN-PRINCIPLES.md), and the [decision records](docs/decisions/). The short list:
+
 - Judgment on the big model, mechanics on cheap ones (haiku fetchers, sonnet scribes)
 - Hooks over prompts for anything that must not be skipped
 - Wikis as persistent memory — every session reads from and writes back to them
