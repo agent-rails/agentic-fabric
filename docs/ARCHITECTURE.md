@@ -8,42 +8,50 @@ This is a personal multi-agent stack layered on top of Claude Code. Work is done
 
 ## Component map
 
-```
-                    ┌──────────────────────────────────────────────┐
-                    │                   USER                        │
-                    │        (the orchestrator — see ADR-0002)      │
-                    └───────────────┬──────────────────────────────┘
-                                    │  direct call  |  slash command
-                    ┌───────────────▼──────────────────────────────┐
-                    │              CLAUDE CODE HARNESS               │
-                    │  rules/  •  hooks (scripts/)  •  shared-wiki   │
-                    └───────┬───────────────────────────┬───────────┘
-                            │                           │
-              ┌─────────────▼──────────┐   ┌────────────▼─────────────┐
-              │   voltage family        │   │   sentinel family        │
-              │   (comms / chief-of-    │   │   (PR review /           │
-              │    staff)               │   │    institutional memory) │
-              │                         │   │                          │
-              │  voltage (opus)         │   │  sentinel (opus)         │
-              │   ├ voltage-fetcher(h)  │   │   ├ sentinel-fetcher (h) │
-              │   ├ voltage-scribe (s)  │   │   ├ sentinel-scribe (s)  │
-              │   └ voltage-reporter(s) │   │   ├ architect-review (o) │
-              │                         │   │   ├ ai-architect (o)     │
-              │                         │   │   ├ spock (o, x-vendor)  │
-              │                         │   │   └ scotty (o, x-vendor) │
-              └───────────┬─────────────┘   └────────────┬────────────┘
-                          │                             │
-              ┌───────────▼──────────┐      ┌───────────▼──────────┐
-              │   ~/voltage/wiki      │      │   ~/sentinel/wiki    │
-              │   (people, channels,  │      │   (repos, authors,   │
-              │    pending, reports)  │      │    patterns, reviews)│
-              └───────────────────────┘      └──────────────────────┘
+Model tiers: (o) opus, (s) sonnet, (h) haiku.
 
-              build/QA roles (cross-cutting): orchestrator, researcher,
-              implementer, tester, debugger, architect, senior-qa,
-              context-manager
+```mermaid
+flowchart TD
+    user["USER<br/>(orchestrator, see ADR-0002)"]
+    harness["CLAUDE CODE HARNESS<br/>rules/ . hooks (scripts/) . shared-wiki"]
+    user -->|"direct call / slash command"| harness
 
-              (h)=haiku  (s)=sonnet  (o)=opus
+    subgraph voltage["voltage family (comms / chief-of-staff)"]
+        v["voltage (o)"]
+        vf["voltage-fetcher (h)"]
+        vs["voltage-scribe (s)"]
+        vr["voltage-reporter (s)"]
+        v --> vf
+        v --> vs
+        v --> vr
+    end
+
+    subgraph sentinel["sentinel family (PR review / institutional memory)"]
+        s["sentinel (o)"]
+        sf["sentinel-fetcher (h)"]
+        ss["sentinel-scribe (s)"]
+        ar["architect-review (o)"]
+        aa["ai-architect (o)"]
+        sp["spock (o, x-vendor)"]
+        sc["scotty (o, x-vendor)"]
+        s --> sf
+        s --> ss
+        s -.cascade peers.-> ar
+        s -.cascade peers.-> aa
+        s -.cascade peers.-> sp
+        s -.fix drafts.-> sc
+    end
+
+    harness --> voltage
+    harness --> sentinel
+
+    vwiki[("~/voltage/wiki<br/>people, channels, pending, reports")]
+    swiki[("~/sentinel/wiki<br/>repos, authors, patterns, reviews")]
+    voltage <--> vwiki
+    sentinel <--> swiki
+
+    build["build/QA roles (cross-cutting):<br/>orchestrator, researcher, implementer,<br/>tester, debugger, architect, senior-qa, context-manager"]
+    harness --> build
 ```
 
 ## The five layers
@@ -105,6 +113,26 @@ user → /triage → voltage (opus)
   6. after send → voltage-scribe (sonnet): update people/pending/log, commit
 ```
 
+```mermaid
+sequenceDiagram
+    actor User
+    participant V as voltage (o)
+    participant F as voltage-fetcher (h)
+    participant Sc as voltage-scribe (s)
+    participant W as ~/voltage/wiki
+
+    User->>V: /triage
+    V->>W: read shared-wiki + patterns/channels
+    V->>F: fan out per channel (3+ channels, Pattern 5)
+    F-->>V: message digests
+    Note over V: classify 4 tiers + routing verdict (shadow)
+    Note over V: draft replies from wiki tone + context
+    V->>User: drafts [Send] [Edit] [Skip]
+    User->>V: Send (human gate, ADR-0006)
+    V->>Sc: hand off write-back
+    Sc->>W: update people/pending/log + commit
+```
+
 Fetch fans out (research isolation), the model does the judgment (classify + draft), the scribe does the mechanical write-back. Cheap models on the ends, opus in the middle.
 
 ### PR review (`/review-pr` → sentinel cascade)
@@ -122,6 +150,36 @@ user → /review-pr <url> → sentinel (opus, synthesizer)
      — cycle-bounded: 3-cycle cap, severity gating after cycle 1, convergence detection
   5. sentinel-scribe (sonnet) updates repo/author/pattern pages + review log
   6. optional follow-up: user runs /draft-pr-fixes → scotty drafts patches (never applies)
+```
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant S as sentinel (o, synthesizer)
+    participant F as sentinel-fetcher (h)
+    participant AR as architect-review (o)
+    participant AA as ai-architect (o)
+    participant SP as spock (o, x-vendor)
+    participant Sc as sentinel-scribe (s)
+
+    User->>S: /review-pr <url>
+    Note over S: Step 0 - necessity check
+    S->>F: pull diff, files, comments
+    F-->>S: PR data
+    Note over S: security/arch/AI path? fan out in parallel (Pattern 3)
+    par parallel peers
+        S->>AR: architectural consistency
+        S->>AA: LLM/agent-impact
+        S->>SP: cross-vendor diversity
+    end
+    AR-->>S: findings
+    AA-->>S: findings
+    SP-->>S: findings
+    Note over S: synthesize one verdict<br/>evidence-calibrated severity<br/>cycle-bounded (3-cap, gating, convergence)
+    S->>User: verdict
+    S->>Sc: hand off write-back
+    Sc->>S: repo/author/pattern pages + review log updated
+    Note over User: optional: /draft-pr-fixes -> scotty drafts (never applies)
 ```
 
 The cascade is the one place fan-out happens, and it is strictly bounded — parallel peers, one synthesizer, a cycle cap. This is Pattern 3, not persona-calls-persona. See [ADR-0005](decisions/0005-cross-vendor-cascade.md) and the [orchestration-patterns catalog](../shared-wiki/orchestration-patterns.md).
