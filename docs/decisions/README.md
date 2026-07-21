@@ -12,6 +12,7 @@ Format is lightweight [MADR](https://adr.github.io/madr/)-style. These are recon
 | [0004](0004-hooks-over-prompts.md) | Hooks over prompts for rules that must not be skipped | Accepted |
 | [0005](0005-cross-vendor-cascade.md) | Cross-vendor review cascade, bounded by a convergence cap | Accepted |
 | [0006](0006-outbound-human-gate.md) | Outbound actions (send/merge/push) are always human-gated | Accepted |
+| [0007](0007-llm-judge-autonomous-loops.md) | LLM judge may close reversible loops; never opens the outbound gate | Proposed |
 
 ## Writing a new ADR
 
