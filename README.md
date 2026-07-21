@@ -36,3 +36,11 @@ For the internals, the whys, and the decisions behind them, see [`docs/`](docs/)
 2. Seed `~/voltage/` and `~/sentinel/` from `wikis/` (schema + templates; wikis fill themselves through use)
 3. Replace every placeholder (`grep -r "your-org\|youralias\|YOUR_SLACK\|you@example.com" .`)
 4. Wire hooks per `docs/settings.hooks.example.json`; load launchd plists if you want scheduled reports
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). These are prompts and hooks that drive an agent with tool access — review before you run them, and keep outbound actions human-gated.
+
+## License
+
+[Apache License 2.0](LICENSE). Portions of `shared-wiki/orchestration-patterns.md` are adapted from [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills) (MIT) — see [NOTICE](NOTICE).
