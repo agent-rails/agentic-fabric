@@ -1,4 +1,4 @@
-# Voltage Wiki — Schema
+# Triage-agent Wiki — Schema
 
 This document defines the structure, ingestion rules, and page templates for the LLM-maintained wiki. The wiki serves as the persistent knowledge layer for a Principal DevOps Architect who manages communications, infrastructure operations, and team coordination across Slack, email, calendar, and incident channels.
 
@@ -252,7 +252,7 @@ Daily reports live in `wiki/reports/daily/{YYYY-MM-DD}.md`.
 
 - `wiki/index.md` is regenerated after every ingestion
 - `wiki/log.md` is append-only
-- `wiki/log.jsonl` is append-only — one JSON object per scribe pass, written in the same Edit pass as the matching `log.md` row. Schema lives in voltage-scribe agent prompt (controlled vocab for `op` and `source`, integer counts).
+- `wiki/log.jsonl` is append-only — one JSON object per scribe pass, written in the same Edit pass as the matching `log.md` row. Schema lives in triage-scribe agent prompt (controlled vocab for `op` and `source`, integer counts).
 - Pages in `pending/` are reviewed during every triage session
 - `[STALE]` tags are added during weekly review (items >90 days untouched)
 - `[CONFLICT]` tags require human resolution before the page is considered reliable

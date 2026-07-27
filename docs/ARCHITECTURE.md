@@ -16,24 +16,24 @@ flowchart TD
     harness["CLAUDE CODE HARNESS<br/>rules/ . hooks (scripts/) . shared-wiki"]
     user -->|"direct call / slash command"| harness
 
-    subgraph voltage["voltage family (comms / chief-of-staff)"]
-        v["voltage (o)"]
-        vf["voltage-fetcher (h)"]
-        vs["voltage-scribe (s)"]
-        vr["voltage-reporter (s)"]
+    subgraph triage-agent["triage-agent family (comms / chief-of-staff)"]
+        v["triage-agent (o)"]
+        vf["triage-fetcher (h)"]
+        vs["triage-scribe (s)"]
+        vr["triage-reporter (s)"]
         v --> vf
         v --> vs
         v --> vr
     end
 
-    subgraph sentinel["sentinel family (PR review / institutional memory)"]
-        s["sentinel (o)"]
-        sf["sentinel-fetcher (h)"]
-        ss["sentinel-scribe (s)"]
+    subgraph pr-reviewer["pr-reviewer family (PR review / institutional memory)"]
+        s["pr-reviewer (o)"]
+        sf["pr-review-fetcher (h)"]
+        ss["pr-review-scribe (s)"]
         ar["architect-review (o)"]
         aa["ai-architect (o)"]
-        sp["spock (o, x-vendor)"]
-        sc["scotty (o, x-vendor)"]
+        sp["cross-vendor-reviewer (o, x-vendor)"]
+        sc["patch-drafter (o, x-vendor)"]
         s --> sf
         s --> ss
         s -.cascade peers.-> ar
@@ -42,13 +42,13 @@ flowchart TD
         s -.fix drafts.-> sc
     end
 
-    harness --> voltage
-    harness --> sentinel
+    harness --> triage-agent
+    harness --> pr-reviewer
 
-    vwiki[("~/voltage/wiki<br/>people, channels, pending, reports")]
-    swiki[("~/sentinel/wiki<br/>repos, authors, patterns, reviews")]
-    voltage <--> vwiki
-    sentinel <--> swiki
+    vwiki[("~/triage-agent/wiki<br/>people, channels, pending, reports")]
+    swiki[("~/pr-reviewer/wiki<br/>repos, authors, patterns, reviews")]
+    triage-agent <--> vwiki
+    pr-reviewer <--> swiki
 
     build["build/QA roles (cross-cutting):<br/>orchestrator, researcher, implementer,<br/>tester, debugger, architect, senior-qa, context-manager"]
     harness --> build
@@ -60,8 +60,8 @@ flowchart TD
 
 Each `agents/*.md` is a system prompt with frontmatter (name, description, model, tools). A persona is one perspective on one kind of work. Two families plus a set of build/QA roles:
 
-- **voltage** — chief-of-staff. Triages email/Slack/LINE/Messenger/calendar into four tiers, drafts replies from wiki relationship context, enforces post-send follow-through. Subagents: `voltage-fetcher` (per-channel pull, haiku), `voltage-scribe` (wiki writes, sonnet), `voltage-reporter` (daily/weekly reports, sonnet).
-- **sentinel** — PR-review synthesizer with a DevSecOps lens. Reviews diffs, calibrates severity against evidence, tracks repo/author patterns. Subagents: `sentinel-fetcher` (haiku), `sentinel-scribe` (sonnet), and the cascade peers `architect-review`, `ai-architect`, `spock` (cross-vendor), plus `scotty` (cross-vendor patch drafter).
+- **triage-agent** — chief-of-staff. Triages email/Slack/LINE/Messenger/calendar into four tiers, drafts replies from wiki relationship context, enforces post-send follow-through. Subagents: `triage-fetcher` (per-channel pull, haiku), `triage-scribe` (wiki writes, sonnet), `triage-reporter` (daily/weekly reports, sonnet).
+- **pr-reviewer** — PR-review synthesizer with a DevSecOps lens. Reviews diffs, calibrates severity against evidence, tracks repo/author patterns. Subagents: `pr-review-fetcher` (haiku), `pr-review-scribe` (sonnet), and the cascade peers `architect-review`, `ai-architect`, `cross-vendor-reviewer` (cross-vendor), plus `patch-drafter` (cross-vendor patch drafter).
 - **build/QA roles** — `orchestrator`, `researcher`, `implementer`, `tester`, `debugger`, `architect`, `senior-qa`, `context-manager`. General software work, not tied to a family.
 
 Model tiering is deliberate — judgment on opus, mechanics on haiku/sonnet. See [ADR-0001](decisions/0001-model-tiering.md).
@@ -77,7 +77,7 @@ A slash command is the orchestration layer. It does not add a routing persona; i
 
 Persistent, git-backed markdown. Every session reads relevant pages before acting and writes back after.
 
-- **Agent wikis** (`~/voltage/`, `~/sentinel/`) — domain memory. People, channels, pending items, reports (voltage); repos, authors, patterns, review log (sentinel). This repo ships only the *machinery* (`wikis/voltage/`, `wikis/sentinel/`: purpose, schema, templates, helper scripts). The *data* fills itself through use and is deliberately excluded.
+- **Agent wikis** (`~/triage-agent/`, `~/pr-reviewer/`) — domain memory. People, channels, pending items, reports (triage-agent); repos, authors, patterns, review log (pr-reviewer). This repo ships only the *machinery* (`wikis/triage-agent/`, `wikis/pr-reviewer/`: purpose, schema, templates, helper scripts). The *data* fills itself through use and is deliberately excluded.
 - **shared-wiki** (`~/.claude/shared-wiki/`) — the small cross-cutting fact layer read by every agent on every invocation: `agent-principles.md`, `search-discipline.md`, `orchestration-patterns.md`, plus entity pages (user, people, repos, projects). Kept to ~3-9 pages by an explicit promotion gate.
 
 Wiki-as-memory is the spine of the whole design. See [ADR-0003](decisions/0003-wiki-as-memory.md).
@@ -99,27 +99,27 @@ Global rules files (general, git, planning, prompting, python, typescript, testi
 
 ## Control flow — two worked examples
 
-### Triage (`/triage` → voltage)
+### Triage (`/triage` → triage-agent)
 
 ```
-user → /triage → voltage (opus)
-  1. read shared-wiki (identity, people, projects) + voltage wiki (patterns, channels)
-  2. fetch: 3+ channels → fan out to voltage-fetcher (haiku, one per channel, Pattern 5)
+user → /triage → triage-agent (opus)
+  1. read shared-wiki (identity, people, projects) + triage-agent wiki (patterns, channels)
+  2. fetch: 3+ channels → fan out to triage-fetcher (haiku, one per channel, Pattern 5)
            single channel → inline tool call, no subagent
   3. classify each message → 4 tiers (skip/info_only/meeting_info/action_required)
      + routing verdict (auto_digest/team_feed/surface) in shadow mode
   4. draft replies for action_required using wiki tone + relationship context
   5. present drafts with [Send] [Edit] [Skip] — sending is a human gate (ADR-0006)
-  6. after send → voltage-scribe (sonnet): update people/pending/log, commit
+  6. after send → triage-scribe (sonnet): update people/pending/log, commit
 ```
 
 ```mermaid
 sequenceDiagram
     actor User
-    participant V as voltage (o)
-    participant F as voltage-fetcher (h)
-    participant Sc as voltage-scribe (s)
-    participant W as ~/voltage/wiki
+    participant V as triage-agent (o)
+    participant F as triage-fetcher (h)
+    participant Sc as triage-scribe (s)
+    participant W as ~/triage-agent/wiki
 
     User->>V: /triage
     V->>W: read shared-wiki + patterns/channels
@@ -135,32 +135,32 @@ sequenceDiagram
 
 Fetch fans out (research isolation), the model does the judgment (classify + draft), the scribe does the mechanical write-back. Cheap models on the ends, opus in the middle.
 
-### PR review (`/review-pr` → sentinel cascade)
+### PR review (`/review-pr` → pr-reviewer cascade)
 
 ```
-user → /review-pr <url> → sentinel (opus, synthesizer)
+user → /review-pr <url> → pr-reviewer (opus, synthesizer)
   1. Step 0 — necessity check: should this PR exist in this shape at all?
-  2. sentinel-fetcher (haiku) pulls diff, changed files, existing comments
+  2. pr-review-fetcher (haiku) pulls diff, changed files, existing comments
   3. on security/architectural/AI-impact paths, fan out IN PARALLEL (Pattern 3):
        ├ architect-review (opus)   — architectural consistency
        ├ ai-architect (opus)       — LLM/agent-impact concerns
-       └ spock (opus, codex-backed) — cross-vendor reasoning diversity
-  4. sentinel SYNTHESIZES all peer outputs into one verdict
+       └ cross-vendor-reviewer (opus, codex-backed) — cross-vendor reasoning diversity
+  4. pr-reviewer SYNTHESIZES all peer outputs into one verdict
      — evidence-calibrated severity (unverified BLOCKERs get downgraded)
      — cycle-bounded: 3-cycle cap, severity gating after cycle 1, convergence detection
-  5. sentinel-scribe (sonnet) updates repo/author/pattern pages + review log
-  6. optional follow-up: user runs /draft-pr-fixes → scotty drafts patches (never applies)
+  5. pr-review-scribe (sonnet) updates repo/author/pattern pages + review log
+  6. optional follow-up: user runs /draft-pr-fixes → patch-drafter drafts patches (never applies)
 ```
 
 ```mermaid
 sequenceDiagram
     actor User
-    participant S as sentinel (o, synthesizer)
-    participant F as sentinel-fetcher (h)
+    participant S as pr-reviewer (o, synthesizer)
+    participant F as pr-review-fetcher (h)
     participant AR as architect-review (o)
     participant AA as ai-architect (o)
-    participant SP as spock (o, x-vendor)
-    participant Sc as sentinel-scribe (s)
+    participant SP as cross-vendor-reviewer (o, x-vendor)
+    participant Sc as pr-review-scribe (s)
 
     User->>S: /review-pr <url>
     Note over S: Step 0 - necessity check
@@ -179,14 +179,14 @@ sequenceDiagram
     S->>User: verdict
     S->>Sc: hand off write-back
     Sc->>S: repo/author/pattern pages + review log updated
-    Note over User: optional: /draft-pr-fixes -> scotty drafts (never applies)
+    Note over User: optional: /draft-pr-fixes -> patch-drafter drafts (never applies)
 ```
 
 The cascade is the one place fan-out happens, and it is strictly bounded — parallel peers, one synthesizer, a cycle cap. This is Pattern 3, not persona-calls-persona. See [ADR-0005](decisions/0005-cross-vendor-cascade.md) and the [orchestration-patterns catalog](../shared-wiki/orchestration-patterns.md).
 
 ## Why families, not one mega-agent
 
-voltage and sentinel share the same skeleton — opus lead, haiku fetcher, sonnet scribe, git-backed wiki — but stay separate because they answer different questions and their memory would drift if merged. A person's triage history and a repo's review history are different surfaces with different decay rates. Shared-wiki carries only the facts *both* need; everything else stays domain-local. This is the promotion/demotion discipline described in `shared-wiki/purpose.md`.
+triage-agent and pr-reviewer share the same skeleton — opus lead, haiku fetcher, sonnet scribe, git-backed wiki — but stay separate because they answer different questions and their memory would drift if merged. A person's triage history and a repo's review history are different surfaces with different decay rates. Shared-wiki carries only the facts *both* need; everything else stays domain-local. This is the promotion/demotion discipline described in `shared-wiki/purpose.md`.
 
 ## The orchestration constraint
 

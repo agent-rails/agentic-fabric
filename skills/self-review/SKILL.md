@@ -248,7 +248,7 @@ These enrichments make the lens evidence ladder operational: the lens can confir
 ### Dispatch
 
 - Generate a per-run nonce (random hex, ≥ 12 chars) for trust-boundary framing.
-- Inline captured outputs into the standard preamble of every lens dispatched in this run, wrapped in `<<<UNTRUSTED-START-{nonce}>>>` / `<<<UNTRUSTED-END-{nonce}>>>` sentinels.
+- Inline captured outputs into the standard preamble of every lens dispatched in this run, wrapped in `<<<UNTRUSTED-START-{nonce}>>>` / `<<<UNTRUSTED-END-{nonce}>>>` pr-reviewers.
 - Pass Base/Head SHAs in the preamble in BOTH modes — symbolic refs (`HEAD`, `<base>`) are not trustworthy mid-run, even in a `chmod -R a-w` tmpdir (defense in depth).
 
 For each enabled lens:

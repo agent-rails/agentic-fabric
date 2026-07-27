@@ -1,6 +1,6 @@
 # Agent Core Principles
 
-Five principles that bind every agent in this workspace (sentinel, spock, scotty, voltage, and any future agents) and my own coding work. When a parent invokes a subagent, the prompt should reference or inline these so the agent does not optimize for the wrong axis.
+Five principles that bind every agent in this workspace (pr-reviewer, cross-vendor-reviewer, patch-drafter, triage-agent, and any future agents) and my own coding work. When a parent invokes a subagent, the prompt should reference or inline these so the agent does not optimize for the wrong axis.
 
 ## 1. Smallest change addressing the root cause
 
@@ -64,14 +64,14 @@ The PR40 hotfix expansion (4-commit root-cause sweep on yq-failure-handling inst
 
 ## How agents should apply
 
-- **Reviewers (sentinel, spock):** when surfacing findings, label same-class follow-ups explicitly so the user can decide to expand the PR scope. Apply principle 2 (would a senior reviewer wave this through?) as the gate verdict.
-- **Drafters (scotty):** when finding 1 and finding 2 overlap, prefer a combined patch over two patches that conflict on apply. Surface the overlap, do not silently produce conflicting drafts.
+- **Reviewers (pr-reviewer, cross-vendor-reviewer):** when surfacing findings, label same-class follow-ups explicitly so the user can decide to expand the PR scope. Apply principle 2 (would a senior reviewer wave this through?) as the gate verdict.
+- **Drafters (patch-drafter):** when finding 1 and finding 2 overlap, prefer a combined patch over two patches that conflict on apply. Surface the overlap, do not silently produce conflicting drafts.
 - **Implementers (Claude direct, implementer agent):** before declaring done, audit the diff for related instances of the same anti-pattern (principle 2) AND verify the change runs on real data (principle 3). Ask: "would the next reviewer flag this same class elsewhere in the diff?"
 - **All agents:** never use words like "good enough," "for now," or "we can address later" unless explicitly told the user accepts that trade — and even then, state the non-goal (principle 5).
 
 ## Orchestration boundary
 
-Before any agent in this workspace introduces a workflow that calls another agent, see [orchestration-patterns.md](orchestration-patterns.md). Governing rule: **the user (or a slash command) is the orchestrator. Personas do not invoke other personas, except as parallel peers feeding a synthesizer (Pattern 3).** Sentinel's PR-review cascade is the canonical Pattern-3 instance. Anything that looks like a router persona, a paraphrasing chain, or a deep persona tree is Anti-pattern A/B/C/D — refactor to a slash command + user-driven sequence.
+Before any agent in this workspace introduces a workflow that calls another agent, see [orchestration-patterns.md](orchestration-patterns.md). Governing rule: **the user (or a slash command) is the orchestrator. Personas do not invoke other personas, except as parallel peers feeding a synthesizer (Pattern 3).** PR-reviewer's PR-review cascade is the canonical Pattern-3 instance. Anything that looks like a router persona, a paraphrasing chain, or a deep persona tree is Anti-pattern A/B/C/D — refactor to a slash command + user-driven sequence.
 
 ### Model-tier gate (Pattern 3 cascades)
 

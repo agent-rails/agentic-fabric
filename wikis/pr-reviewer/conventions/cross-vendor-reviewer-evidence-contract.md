@@ -1,22 +1,22 @@
 ---
-title: Spock evidence contract — calibrating cross-vendor severity by execution
+title: Cross-vendor-reviewer evidence contract — calibrating cross-vendor severity by execution
 type: convention
 status: active
 ---
 
 ## Why this exists
 
-In a single day, spock (cross-vendor cascade) over-asserted three times:
+In a single day, cross-vendor-reviewer (cross-vendor cascade) over-asserted three times:
 
-1. **charts#73 cycle-3**: missed 5 chart bugs caught by a human reviewer running `helm unittest`. Spock read statically and produced findings without running the tests itself.
-2. **api-server#6035 (nginx CVE)**: claimed BLOCKER "supply-chain mismatch — `nginxinc/nginx-unprivileged` ships upstream nginx, not Alpine packages, so the 1.28.3-r1 fix doesn't apply." CI build proved the claim wrong empirically — `1.29-alpine` closed the CVE. Spock asserted authoritatively from web search + Dockerfile parse without ever running `docker build` + scan.
+1. **charts#73 cycle-3**: missed 5 chart bugs caught by a human reviewer running `helm unittest`. Cross-vendor-reviewer read statically and produced findings without running the tests itself.
+2. **api-server#6035 (nginx CVE)**: claimed BLOCKER "supply-chain mismatch — `nginxinc/nginx-unprivileged` ships upstream nginx, not Alpine packages, so the 1.28.3-r1 fix doesn't apply." CI build proved the claim wrong empirically — `1.29-alpine` closed the CVE. Cross-vendor-reviewer asserted authoritatively from web search + Dockerfile parse without ever running `docker build` + scan.
 3. Multiple smaller mis-calibrations the same day.
 
-The common pattern: **spock asserts BLOCKER from static reasoning + web search, doesn't execute, doesn't calibrate severity on absence of evidence.** Confident wrong findings burn review cycles and erode trust in the cross-vendor cascade.
+The common pattern: **cross-vendor-reviewer asserts BLOCKER from static reasoning + web search, doesn't execute, doesn't calibrate severity on absence of evidence.** Confident wrong findings burn review cycles and erode trust in the cross-vendor cascade.
 
 ## The contract
 
-Every `SPOCK_REVIEW` MUST include:
+Every `CROSS_VENDOR_REVIEW` MUST include:
 
 ### 1. `execution_report:` block
 
@@ -39,7 +39,7 @@ Every finding carries one evidence type:
 
 ### 3. Severity calibration
 
-Sentinel (and the orchestrator) read `evidence.type` per finding:
+PR-reviewer (and the orchestrator) read `evidence.type` per finding:
 
 - BLOCKER with `unverified_hypothesis` → downgraded to MEDIUM, note added
 - HIGH with `unverified_hypothesis` → downgraded to LOW

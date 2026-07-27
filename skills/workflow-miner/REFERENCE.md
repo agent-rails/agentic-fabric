@@ -140,8 +140,8 @@ Trust the inside; fail loud at the edge.
   scoring. Defensive capture inside is a bug source — surface the failure.
 - At the source-read boundary: missing source file or unreadable path -> halt
   with explicit error naming the path. Sources are: daily reports dir,
-  voltage log, sentinel log, skills dir, agents dir.
-- At the output-write boundary: output files at `~/voltage/wiki/recurring/`
+  triage-agent log, pr-reviewer log, skills dir, agents dir.
+- At the output-write boundary: output files at `~/triage-agent/wiki/recurring/`
   MAY be missing on first run; create them. Halting on missing output files
   would block bootstrap.
 - At the schema boundary: malformed candidate JSON, unknown stage, missing
@@ -169,8 +169,8 @@ Trust the inside; fail loud at the edge.
 
 Skill invocations are captured by a `PreToolUse` hook with matcher `Skill`,
 configured in `~/.claude/settings.json`. The hook script at
-`~/voltage/scripts/log-skill-invocation.sh` appends one JSON line per
-invocation to `~/voltage/wiki/recurring/.invocations.jsonl`:
+`~/triage-agent/scripts/log-skill-invocation.sh` appends one JSON line per
+invocation to `~/triage-agent/wiki/recurring/.invocations.jsonl`:
 
 ```json
 {"timestamp":"2026-05-05T18:23:14Z","skill":"workflow-miner"}
@@ -196,7 +196,7 @@ Edge handling:
 ## Orchestration manifest
 
 Promoted candidates (stage 2+) get a row in
-`~/voltage/wiki/recurring/orchestration.md` mapping the skill to its
+`~/triage-agent/wiki/recurring/orchestration.md` mapping the skill to its
 trigger type (manual / schedule / hook / agent). The manifest is the
 single source of truth for orchestration state, decoupled from skill
 files — skills stay capability-only; trigger config is data.

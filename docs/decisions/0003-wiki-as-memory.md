@@ -18,14 +18,14 @@ The storage question: where does durable agent memory live?
 
 Option 3. Two tiers:
 
-- **Agent wikis** (`~/voltage/`, `~/sentinel/`) — domain memory. Voltage: people, channels, pending items, reports. Sentinel: repos, authors, patterns, review log. Structured by a `schema.md`, seeded from templates in this repo (`wikis/*/`). Only the machinery ships; the *data* fills itself through use and is excluded from the repo.
+- **Agent wikis** (`~/triage-agent/`, `~/pr-reviewer/`) — domain memory. Triage-agent: people, channels, pending items, reports. PR-reviewer: repos, authors, patterns, review log. Structured by a `schema.md`, seeded from templates in this repo (`wikis/*/`). Only the machinery ships; the *data* fills itself through use and is excluded from the repo.
 - **shared-wiki** (`~/.claude/shared-wiki/`) — the cross-cutting fact layer every agent reads on every invocation: user identity, people, repos, projects, and the principle pages. Kept to ~3-9 pages.
 
 Memory writes are done by cheap sonnet scribes, not the opus lead — the lead keeps the judgment, the scribe does the mechanical write-back. This only works *because* the wiki carries the context the cheap model would otherwise lack.
 
 ## Consequences
 
-- Compounding context: triage opens with relationship history, review opens with repo/author patterns. The stated bar — voltage must answer "who is this person and what do we owe each other?" in <30s from the wiki — is only meetable with persistent memory.
+- Compounding context: triage opens with relationship history, review opens with repo/author patterns. The stated bar — triage-agent must answer "who is this person and what do we owe each other?" in <30s from the wiki — is only meetable with persistent memory.
 - Human-inspectable by default. State is files you can open, diff, and correct. No query layer between you and what the agent believes.
 - **Memory rots — this is the main cost.** Entity pages drift into "the way things were when last edited"; pending items go stale within ~14 days. Mitigations are load-bearing, not optional: the auto-stale rule, the `/wiki-lint` and `/memory-lint` skills, and the promotion/demotion discipline for shared-wiki.
 - **shared-wiki bloat is the failure mode.** The relief valve is a hard rule: scribes never write to shared-wiki; promotion is an explicit human decision. Every historical relaxation of that gate grew shared-wiki faster than it improved output. Demotion moves single-agent facts back down.

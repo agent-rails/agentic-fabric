@@ -1,6 +1,6 @@
 ---
 name: workflow-miner
-description: Mine recurring task patterns from voltage and sentinel wikis to surface candidate skills, cron triggers, or agent ownership opportunities. Promotes proven patterns through a 4-stage ladder and demotes dormant ones; never auto-creates skills or crons. Use when user says "workflow miner", "mine workflows", "what should I automate", "find recurring tasks", or as a weekly cadence task.
+description: Mine recurring task patterns from triage-agent and pr-reviewer wikis to surface candidate skills, cron triggers, or agent ownership opportunities. Promotes proven patterns through a 4-stage ladder and demotes dormant ones; never auto-creates skills or crons. Use when user says "workflow miner", "mine workflows", "what should I automate", "find recurring tasks", or as a weekly cadence task.
 argument-hint: "[--days N] [--dry-run]"
 ---
 
@@ -11,16 +11,16 @@ Mine repeated task sequences from wiki logs and propose candidates for codificat
 - Manual: `/workflow-miner` or "mine my workflows" / "what should I automate"
 - After a session-retrospective if the user asks "is this worth a skill?"
 
-Cadence is **manual** by design. The `schedule` skill creates remote cloud sessions that cannot reach local-only wikis at `~/voltage/` and `~/sentinel/`. Until those wikis are pushed to a remote git host, automated weekly runs are not viable.
+Cadence is **manual** by design. The `schedule` skill creates remote cloud sessions that cannot reach local-only wikis at `~/triage-agent/` and `~/pr-reviewer/`. Until those wikis are pushed to a remote git host, automated weekly runs are not viable.
 
 ## Inputs (read-only)
 
-- `~/voltage/wiki/reports/daily/*.md` — primary signal (what user actually did each day)
-- `~/voltage/wiki/log.md` — wiki ingestion log
-- `~/sentinel/wiki/log.md` and `~/sentinel/wiki/log/` — PR review history
+- `~/triage-agent/wiki/reports/daily/*.md` — primary signal (what user actually did each day)
+- `~/triage-agent/wiki/log.md` — wiki ingestion log
+- `~/pr-reviewer/wiki/log.md` and `~/pr-reviewer/wiki/log/` — PR review history
 - `~/.claude/skills/` — existing skill registry (detect already-codified workflows)
-- `~/voltage/wiki/recurring/workflow-tracking.md` — durable state (content hashes, stage_advanced_at)
-- `~/voltage/wiki/recurring/.invocations.jsonl` — append-only invocation log written by the `Skill` PreToolUse hook (one JSON object per line: `{timestamp, skill}`)
+- `~/triage-agent/wiki/recurring/workflow-tracking.md` — durable state (content hashes, stage_advanced_at)
+- `~/triage-agent/wiki/recurring/.invocations.jsonl` — append-only invocation log written by the `Skill` PreToolUse hook (one JSON object per line: `{timestamp, skill}`)
 
 NEVER write to source files. Only the two output files below.
 
@@ -38,14 +38,14 @@ Single subagent invocation — keeps heavy log reads off the orchestrator's cont
 
 ```
 Mine recurring task patterns for the last {DAYS} days. Sources:
-- ~/voltage/wiki/reports/daily/*.md
-- ~/voltage/wiki/log.md
-- ~/sentinel/wiki/log.md
-- ~/sentinel/wiki/log/
+- ~/triage-agent/wiki/reports/daily/*.md
+- ~/triage-agent/wiki/log.md
+- ~/pr-reviewer/wiki/log.md
+- ~/pr-reviewer/wiki/log/
 - ~/.claude/skills/ (existing skill registry — names only)
 
-Read prior state from ~/voltage/wiki/recurring/workflow-candidates.md and
-~/voltage/wiki/recurring/workflow-tracking.md (if present).
+Read prior state from ~/triage-agent/wiki/recurring/workflow-candidates.md and
+~/triage-agent/wiki/recurring/workflow-tracking.md (if present).
 
 For each recurring sequence (frequency >= 3 distinct calendar dates in window):
 - id: per REFERENCE.md `id` hash rule (sha1 of normalized steps, prefixed `wf-`)
@@ -63,7 +63,7 @@ For each recurring sequence (frequency >= 3 distinct calendar dates in window):
 - stage: per REFERENCE.md ladder
 - first_seen / last_seen dates
 
-Aggregate invocations from ~/voltage/wiki/recurring/.invocations.jsonl:
+Aggregate invocations from ~/triage-agent/wiki/recurring/.invocations.jsonl:
 - Group entries by `skill` field
 - For each tracked skill, set `invocations` = count and `last_invoked` = max(timestamp)
 - The JSONL is append-only and may not exist yet on first run — treat absence as 0 invocations
@@ -73,10 +73,10 @@ Apply stage transitions per REFERENCE.md. Demote skill_proven entries unused
 prior approval recorded in workflow-tracking.md.
 
 Output file handling:
-- Output files at ~/voltage/wiki/recurring/ MAY be missing on first run — create them.
-- Source files (daily reports, voltage log, sentinel log, skills/agents dirs) MUST exist — halt if missing.
-- Write the full candidates table to ~/voltage/wiki/recurring/workflow-candidates.md (atomic overwrite).
-- On first run, leave ~/voltage/wiki/recurring/workflow-tracking.md empty (only update for skills drafted/proven/promoted in prior runs).
+- Output files at ~/triage-agent/wiki/recurring/ MAY be missing on first run — create them.
+- Source files (daily reports, triage-agent log, pr-reviewer log, skills/agents dirs) MUST exist — halt if missing.
+- Write the full candidates table to ~/triage-agent/wiki/recurring/workflow-candidates.md (atomic overwrite).
+- On first run, leave ~/triage-agent/wiki/recurring/workflow-tracking.md empty (only update for skills drafted/proven/promoted in prior runs).
 
 Trust internal parsing; do not wrap each step in try/except. Validate only at
 the source-read boundary and the schema boundary.
@@ -111,8 +111,8 @@ User approval gates every transition. Skill never self-promotes.
 
 ## Outputs
 
-- `~/voltage/wiki/recurring/workflow-candidates.md` — full ladder (overwritten each run)
-- `~/voltage/wiki/recurring/workflow-tracking.md` — invocations, last-used, stage transitions
+- `~/triage-agent/wiki/recurring/workflow-candidates.md` — full ladder (overwritten each run)
+- `~/triage-agent/wiki/recurring/workflow-tracking.md` — invocations, last-used, stage transitions
 - Top-5 summary in chat for review
 
 See `REFERENCE.md` for full schema, scoring, and edge-handling principle.

@@ -21,11 +21,11 @@ A fact belongs in shared-wiki if and only if:
 
 ## What does NOT belong here
 
-- Triage history (lives in `~/voltage/wiki/people/`)
-- PR review history (lives in `~/sentinel/wiki/authors/` and `wiki/repos/`)
+- Triage history (lives in `~/triage-agent/wiki/people/`)
+- PR review history (lives in `~/pr-reviewer/wiki/authors/` and `wiki/repos/`)
 - Anti-patterns and patterns (live in agent wikis, cited by name from here only if cross-cutting)
-- Daily / weekly reports (lives in `~/voltage/wiki/reports/`)
-- Operational state, alerts, incidents in flight (live in voltage)
+- Daily / weekly reports (lives in `~/triage-agent/wiki/reports/`)
+- Operational state, alerts, incidents in flight (live in triage-agent)
 - Anything that would force a re-read on every invocation if it changed weekly
 
 ## Key questions this layer should answer
@@ -56,7 +56,7 @@ If a fact in shared-wiki turns out to only matter to one agent, or becomes stale
 
 1. Move the canonical copy into the agent wiki that actually uses it, or remove it entirely
 2. Update any agent prompts that referenced it
-3. Note the demotion in `~/voltage/wiki/log.md` so the audit trail is preserved
+3. Note the demotion in `~/triage-agent/wiki/log.md` so the audit trail is preserved
 
 Shared-wiki bloat is the failure mode. Demotion is the relief valve.
 

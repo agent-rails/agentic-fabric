@@ -47,10 +47,10 @@ A finding's severity is bounded by the evidence behind it. An unverified BLOCKER
 
 ## 6. Cross-vendor cascade for reasoning diversity
 
-On security-critical paths, a second model *family* (codex-backed `spock`/`scotty`) reviews alongside the Claude-family peers. Different training → different blind spots → findings one family would miss.
+On security-critical paths, a second model *family* (codex-backed `cross-vendor-reviewer`/`patch-drafter`) reviews alongside the Claude-family peers. Different training → different blind spots → findings one family would miss.
 
-- Bounded on purpose: parallel peers, one synthesizer (sentinel), a 3-cycle cap with severity gating and convergence detection — otherwise the cascade loops as the reviewer board grows.
-- `spock` is never invoked directly by the orchestrator — only by sentinel, as a cascade step, when a path is genuinely security-critical. Cost is real; spend it where blind spots hurt. See [ADR-0005](decisions/0005-cross-vendor-cascade.md).
+- Bounded on purpose: parallel peers, one synthesizer (pr-reviewer), a 3-cycle cap with severity gating and convergence detection — otherwise the cascade loops as the reviewer board grows.
+- `cross-vendor-reviewer` is never invoked directly by the orchestrator — only by pr-reviewer, as a cascade step, when a path is genuinely security-critical. Cost is real; spend it where blind spots hurt. See [ADR-0005](decisions/0005-cross-vendor-cascade.md).
 
 ## 7. Outbound actions are always human-gated
 

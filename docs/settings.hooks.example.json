@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/Users/youruser/voltage/scripts/log-skill-invocation.sh",
+            "command": "/Users/youruser/triage-agent/scripts/log-skill-invocation.sh",
             "timeout": 5
           }
         ]
@@ -81,7 +81,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/Users/youruser/.claude/agents/voltage-reporter/session-drain-check.sh",
+            "command": "/Users/youruser/.claude/agents/triage-reporter/session-drain-check.sh",
             "timeout": 10
           }
         ]

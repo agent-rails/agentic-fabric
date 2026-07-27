@@ -56,7 +56,7 @@ This skill is outbound-only and event-driven by an external signal. If the trigg
 - Posted summary + mitigation proposal in devops group DM (message permalink).
 - Optional cross-post in `#devops`.
 - Action items per mitigation lever with named owners.
-- Wiki log entry appended to `~/voltage/wiki/log.md` via voltage-scribe with the advisory, destinations, and resolved actions.
+- Wiki log entry appended to `~/triage-agent/wiki/log.md` via triage-scribe with the advisory, destinations, and resolved actions.
 
 ## Failure modes
 
@@ -73,4 +73,4 @@ This skill is outbound-only and event-driven by an external signal. If the trigg
 - Advisory text fetched once and quoted in drafts; do not re-fetch per channel.
 - Drafts staged before send keep edit cycles cheap (no re-post cleanup).
 - Thread monitoring is read-only and pull-based — open thread on demand, do not stream.
-- Wiki logging delegated to voltage-scribe; this skill returns the post permalinks and lets the scribe handle persistence.
+- Wiki logging delegated to triage-scribe; this skill returns the post permalinks and lets the scribe handle persistence.
