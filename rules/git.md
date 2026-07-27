@@ -42,14 +42,14 @@
 - Public content discipline (PRs, commits, issues, published writing)
     - Never name internal agents in user-facing git output
     - Applies to: PR titles, PR bodies, PR comments, PR review bodies, issue titles/bodies/comments, commit messages, published blogs / external technical writing
-    - Forbidden names: sentinel, spock, architect-reviewer, ai-architect, sentinel-scribe, sentinel-fetcher, voltage, voltage-scribe, voltage-fetcher, voltage-reporter, orchestrator, researcher, implementer, debugger, tester, plus any custom subagent slug
+    - Forbidden names: your-pr-reviewer, your-cross-vendor-reviewer, architect-reviewer, ai-architect, your-pr-review-scribe, your-pr-review-fetcher, your-triage-agent, your-triage-scribe, your-triage-fetcher, your-triage-reporter, orchestrator, researcher, implementer, debugger, tester, plus any custom subagent slug
     - Reframe to generic role descriptions
-        - "sentinel review" → "review" / "DevSecOps review"
-        - "spock cross-vendor cascade" → "cross-vendor review" / "second-vendor review"
+        - "your-pr-reviewer review" → "review" / "DevSecOps review"
+        - "your-cross-vendor-reviewer cross-vendor cascade" → "cross-vendor review" / "second-vendor review"
         - "architect-reviewer found" → "architectural review found"
         - "ai-architect" → "AI architecture review"
-        - "sentinel-scribe wiki update" → "review log updated"
-    - Forbidden phrases: "spock cascade", "sentinel cycle N", "ARCHITECT_INPUT", "SPOCK_INPUT", "AI_ARCHITECT_INPUT" — strip the input-block names too
+        - "your-pr-review-scribe wiki update" → "review log updated"
+    - Forbidden phrases: "your-cross-vendor-reviewer cascade", "your-pr-reviewer cycle N", "ARCHITECT_INPUT", "YOUR_CROSS_VENDOR_REVIEWER_INPUT", "AI_ARCHITECT_INPUT" — strip the input-block names too
     - Reason: agents are internal tooling; surfacing names leaks implementation details, anchors reviewers on "the agent said X" rather than the substance, and dates the content as new tooling lands or changes name
-    - Reasoning summaries are fine (e.g., "found via cross-vendor review" not "spock surfaced this in cycle 2")
+    - Reasoning summaries are fine (e.g., "found via cross-vendor review" not "your-cross-vendor-reviewer surfaced this in cycle 2")
     - Applies whether the content is being written, edited, or copy-pasted from internal review output

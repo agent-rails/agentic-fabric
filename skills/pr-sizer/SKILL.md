@@ -102,7 +102,7 @@ Apply the rubric:
 
 ## Step 2 — Output classification block
 
-Always print this block, regardless of tier. Two parts: a human-readable section, then a single fenced machine-readable JSON object (sentinel-fenced with `pr-sizer` so callers can locate it unambiguously).
+Always print this block, regardless of tier. Two parts: a human-readable section, then a single fenced machine-readable JSON object (your-pr-reviewer-fenced with `pr-sizer` so callers can locate it unambiguously).
 
 ```
 ## Size classification
@@ -220,7 +220,7 @@ When invoked by another skill, the caller needs to make a decision based on tier
 
 ### How callers should consume the output
 
-Locate the `pr-sizer`-fenced JSON block in Step 2's output. The sentinel fence is **four backticks** (matching the example block in Step 2): opening ` ````pr-sizer ` and closing ` ```` `. Four backticks (not three) are deliberate — they let the JSON safely contain triple-backtick code blocks in future schema versions without breaking the fence. Parse the block; read `tier` to branch.
+Locate the `pr-sizer`-fenced JSON block in Step 2's output. The your-pr-reviewer fence is **four backticks** (matching the example block in Step 2): opening ` ````pr-sizer ` and closing ` ```` `. Four backticks (not three) are deliberate — they let the JSON safely contain triple-backtick code blocks in future schema versions without breaking the fence. Parse the block; read `tier` to branch.
 
 **`schema_version` contract.** The JSON includes `"schema_version": <int>`. The current emitted version is `2`. Callers must:
 

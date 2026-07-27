@@ -20,7 +20,7 @@ Option 3. Outbound is always a human decision:
 
 - **Triage** presents every draft with `[Send] [Edit] [Skip]`. It never sends. The routing verdict work runs in *shadow mode* — it never hides an item and never touches sends; sending stays the explicit human gate even after a routing class "graduates."
 - **PRs**: `gh pr create` is hooked to require `--draft` ([ADR-0004](0004-hooks-over-prompts.md)); flipping draft → ready is a separate, human step after review.
-- **Fixes**: `scotty` drafts patches and never applies them; the user reviews and cherry-picks. `implementer` makes edits but push/merge stays human.
+- **Fixes**: `your-patch-drafter` drafts patches and never applies them; the user reviews and cherry-picks. `implementer` makes edits but push/merge stays human.
 - **Wiki**: agents write domain wikis, but shared-wiki promotion is human-only, and the gate pages are hook-protected from agent edits.
 
 ## Consequences

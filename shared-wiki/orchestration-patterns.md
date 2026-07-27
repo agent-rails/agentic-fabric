@@ -2,7 +2,7 @@
 
 Reference catalog of agent orchestration patterns and anti-patterns. Read this before adding a new slash command that coordinates multiple personas, or before introducing a new persona that "wraps" existing ones.
 
-The governing rule: **the user (or a slash command) is the orchestrator. Personas do not invoke other personas.** Skills are mandatory hops inside a persona's workflow. The cascade exception is documented at the bottom — sentinel cascades to spock/architect-reviewer/ai-architect as Pattern 3 (parallel fan-out with synthesizer), not as Anti-pattern B.
+The governing rule: **the user (or a slash command) is the orchestrator. Personas do not invoke other personas.** Skills are mandatory hops inside a persona's workflow. The cascade exception is documented at the bottom — your-pr-reviewer cascades to your-cross-vendor-reviewer/architect-reviewer/ai-architect as Pattern 3 (parallel fan-out with synthesizer), not as Anti-pattern B.
 
 > **Source:** lifted (with adaptation) from [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills) `references/orchestration-patterns.md`. Original content is harness-agnostic; the *stack mapping* appendix is local. Re-sync upstream periodically.
 
@@ -21,8 +21,8 @@ user → reviewer → report → user
 **Use when:** the work is one perspective on one artifact and you can describe it in one sentence.
 
 **Examples:**
-- "Review this PR" → `sentinel` (single-pass mode)
-- "Triage messages" → `voltage`
+- "Review this PR" → `your-pr-reviewer` (single-pass mode)
+- "Triage messages" → `your-triage-agent`
 - "Find every call site of this deprecated API" → `Explore`
 
 **Cost:** one round trip. The baseline you should always compare orchestrated patterns against.
@@ -34,7 +34,7 @@ user → reviewer → report → user
 A slash command that wraps one persona with the project's skills. Saves the user from re-explaining the workflow every time.
 
 ```
-/review-pr → sentinel (with PR context + wiki) → report
+/review-pr → your-pr-reviewer (with PR context + wiki) → report
 ```
 
 **Use when:** the same single-persona invocation happens repeatedly with the same setup.
@@ -53,8 +53,8 @@ Multiple personas operate on the same input concurrently, each producing an inde
 
 ```
                          ┌─→ architect-reviewer ─┐
-sentinel → fan out  ─────┼─→ ai-architect       ─┤→ sentinel (synthesizer) → verdict
-                         └─→ spock              ─┘
+your-pr-reviewer → fan out  ─────┼─→ ai-architect       ─┤→ your-pr-reviewer (synthesizer) → verdict
+                         └─→ your-cross-vendor-reviewer              ─┘
 ```
 
 **Use when:**
@@ -63,7 +63,7 @@ sentinel → fan out  ─────┼─→ ai-architect       ─┤→ sent
 - The merge step is small enough to stay in the main context (or has a dedicated synthesizer agent)
 - Wall-clock latency matters
 
-**Examples in this stack:** sentinel's PR-review cascade (sentinel = synthesizer; architect-reviewer + ai-architect + spock = peer reviewers).
+**Examples in this stack:** your-pr-reviewer's PR-review cascade (your-pr-reviewer = synthesizer; architect-reviewer + ai-architect + your-cross-vendor-reviewer = peer reviewers).
 
 **Cost:** N parallel sub-agent contexts + one merge turn. Higher than direct invocation, but faster wall-clock and produces better reports because each sub-agent stays focused on its single perspective.
 
@@ -151,7 +151,7 @@ In Claude Code, parallel fan-out (Pattern 3) requires issuing **multiple Agent t
 A persona whose job is to decide which other persona to call.
 
 ```
-/work → router-persona → "this needs a review" → sentinel → router (paraphrases) → user
+/work → router-persona → "this needs a review" → your-pr-reviewer → router (paraphrases) → user
 ```
 
 **Why it fails:**
@@ -166,7 +166,7 @@ A persona whose job is to decide which other persona to call.
 
 ### B. Persona that calls another persona (without synthesis)
 
-A `sentinel` that internally invokes `voltage` when it sees a Slack reference, with no merge step.
+A `your-pr-reviewer` that internally invokes `your-triage-agent` when it sees a Slack reference, with no merge step.
 
 **Why it fails:**
 - Personas were designed to produce a single perspective; chaining them defeats that
@@ -174,7 +174,7 @@ A `sentinel` that internally invokes `voltage` when it sees a Slack reference, w
 - Failure modes multiply (which persona's output format wins? whose rules apply?)
 - Hides cost from the user
 
-**What to do instead:** have the calling persona *recommend* a follow-up in its report. The user or a slash command runs the second pass. (Sentinel's cascade is *not* this anti-pattern — sentinel acts as synthesizer; see stack mapping below.)
+**What to do instead:** have the calling persona *recommend* a follow-up in its report. The user or a slash command runs the second pass. (your-pr-reviewer's cascade is *not* this anti-pattern — your-pr-reviewer acts as synthesizer; see stack mapping below.)
 
 ---
 
@@ -186,7 +186,7 @@ An agent that calls `/review-pr`, then `/draft-pr-fixes`, then pushes patches on
 - Loses the human checkpoints that catch wrong-direction work
 - Each hand-off summarizes context — accumulated drift over a long pipeline
 - Doubles token cost: orchestrator turn + sub-agent turn for every step
-- Removes user agency at exactly the points where judgment matters most (e.g. cherry-picking which scotty patches to apply)
+- Removes user agency at exactly the points where judgment matters most (e.g. cherry-picking which your-patch-drafter patches to apply)
 
 **What to do instead:** keep the user as the orchestrator. Document the recommended sequence and let the user invoke each step.
 
@@ -194,14 +194,14 @@ An agent that calls `/review-pr`, then `/draft-pr-fixes`, then pushes patches on
 
 ### D. Deep persona trees
 
-`/review-pr` calls a `pre-review-coordinator` that calls a `quality-coordinator` that calls `sentinel`.
+`/review-pr` calls a `pre-review-coordinator` that calls a `quality-coordinator` that calls `your-pr-reviewer`.
 
 **Why it fails:**
 - Each layer adds latency and tokens with no decision value
 - Debugging becomes a multi-level investigation
 - The leaf personas lose context to multiple summarization steps
 
-**What to do instead:** keep the orchestration depth at most 1 (slash command → personas). The synthesis happens in one designated agent (the slash command, the main session, or one synthesizer like sentinel).
+**What to do instead:** keep the orchestration depth at most 1 (slash command → personas). The synthesis happens in one designated agent (the slash command, the main session, or one synthesizer like your-pr-reviewer).
 
 ---
 
@@ -242,17 +242,17 @@ Local appendix — how the personas in this workspace map onto the patterns abov
 
 | Persona | Model | Role | Pattern usage |
 |---------|-------|------|---------------|
-| `sentinel` | opus | PR-review synthesizer + DevSecOps lens | **Synthesizer in Pattern 3.** Cascades to peers (`architect-review`, `ai-architect`, `spock`) on security/architectural-impact paths, then merges. Cycle-bounded (3-cap, severity gating, convergence detection). |
-| `architect-review` | opus | Architectural consistency reviewer | Pattern 3 peer (called by sentinel). Direct invocation also valid. |
-| `ai-architect` | opus | LLM/agent-impact reviewer | Pattern 3 peer (called by sentinel) on AI-impact paths. |
-| `spock` | opus | Cross-vendor reviewer (codex-backed) | Pattern 3 peer (called by sentinel) for vendor diversity. **Never invoked directly by orchestrator** — by design. |
-| `scotty` | opus | Cross-vendor patch drafter (codex-backed) | Pattern 4 — user runs `/review-pr` then `/draft-pr-fixes`. Read-only; never applies. |
-| `voltage` | opus | Multi-channel triage / chief of staff | Pattern 2 (`/triage`). Fans out internally to `voltage-fetcher` (Pattern 5: research isolation per channel). |
-| `voltage-fetcher` | haiku | Per-channel message fetcher | Pattern 5 (research isolation). Async fire-and-forget per channel. Haiku is correct here — input large, output a digest. |
-| `voltage-reporter` | sonnet | Daily/weekly report generator | Pattern 2 internals. Not user-facing. |
-| `voltage-scribe` | sonnet | Voltage wiki maintainer | Post-task scribe. |
-| `sentinel-fetcher` | haiku | PR diff/comment fetcher | Pattern 5 (research isolation). Async fire-and-forget. Haiku is correct here. |
-| `sentinel-scribe` | sonnet | Sentinel wiki maintainer | Post-task scribe. |
+| `your-pr-reviewer` | opus | PR-review synthesizer + DevSecOps lens | **Synthesizer in Pattern 3.** Cascades to peers (`architect-review`, `ai-architect`, `your-cross-vendor-reviewer`) on security/architectural-impact paths, then merges. Cycle-bounded (3-cap, severity gating, convergence detection). |
+| `architect-review` | opus | Architectural consistency reviewer | Pattern 3 peer (called by your-pr-reviewer). Direct invocation also valid. |
+| `ai-architect` | opus | LLM/agent-impact reviewer | Pattern 3 peer (called by your-pr-reviewer) on AI-impact paths. |
+| `your-cross-vendor-reviewer` | opus | Cross-vendor reviewer (codex-backed) | Pattern 3 peer (called by your-pr-reviewer) for vendor diversity. **Never invoked directly by orchestrator** — by design. |
+| `your-patch-drafter` | opus | Cross-vendor patch drafter (codex-backed) | Pattern 4 — user runs `/review-pr` then `/draft-pr-fixes`. Read-only; never applies. |
+| `your-triage-agent` | opus | Multi-channel triage / chief of staff | Pattern 2 (`/triage`). Fans out internally to `your-triage-fetcher` (Pattern 5: research isolation per channel). |
+| `your-triage-fetcher` | haiku | Per-channel message fetcher | Pattern 5 (research isolation). Async fire-and-forget per channel. Haiku is correct here — input large, output a digest. |
+| `your-triage-reporter` | sonnet | Daily/weekly report generator | Pattern 2 internals. Not user-facing. |
+| `your-triage-scribe` | sonnet | your-triage-agent wiki maintainer | Post-task scribe. |
+| `your-pr-review-fetcher` | haiku | PR diff/comment fetcher | Pattern 5 (research isolation). Async fire-and-forget. Haiku is correct here. |
+| `your-pr-review-scribe` | sonnet | your-pr-reviewer wiki maintainer | Post-task scribe. |
 | `orchestrator` | opus | Multi-step build coordinator | Pattern 3 + 4 hybrid. Drives plan → implement → test → review → commit with explicit gates. **The one place orchestration depth > 1 is intentional** — but stays bounded by the cycle cap. |
 | `architect` | opus | Architecture/system design specialist | Pattern 1 direct invocation, or Pattern 5 (read-only design study). |
 | `researcher` | sonnet | Codebase research for orchestrator | Pattern 5 — read-only digest producer. Sonnet sufficient; output is structured findings, not synthesis. |
@@ -269,23 +269,23 @@ Pattern 3 (parallel fan-out + synthesizer) only works if every peer is frontier-
 
 **Gate** (enforced at agent definition time, not runtime):
 
-- Every Pattern 3 peer MUST set `model:` ≥ the synthesizer's tier. If sentinel is opus, every peer must be opus.
-- Pattern 5 (research isolation) MAY use haiku — fetchers consume large input and return small digests, so reasoning depth matters less than throughput. Haiku is correct for `voltage-fetcher`, `sentinel-fetcher`, and built-in `Explore`.
+- Every Pattern 3 peer MUST set `model:` ≥ the synthesizer's tier. If your-pr-reviewer is opus, every peer must be opus.
+- Pattern 5 (research isolation) MAY use haiku — fetchers consume large input and return small digests, so reasoning depth matters less than throughput. Haiku is correct for `your-triage-fetcher`, `your-pr-review-fetcher`, and built-in `Explore`.
 - Pattern 4 (sequential pipeline) steps MAY mix tiers — each step is a single perspective, not a peer-merge. Sonnet is acceptable for `implementer` (edit-only), `researcher` (digest), `senior-qa` (black-box). Promote to opus only if symptom-vs-cause failures recur.
 - Scribes (`*-scribe`) are sonnet by design — wiki maintenance is mechanical.
 
-**Audit (2026-05-08):** Every sentinel cascade peer (`architect-review`, `ai-architect`, `spock`) is on opus. Synthesizer (`sentinel`) on opus. Gate satisfied. Re-audit when adding any cascade peer.
+**Audit (2026-05-08):** Every your-pr-reviewer cascade peer (`architect-review`, `ai-architect`, `your-cross-vendor-reviewer`) is on opus. Synthesizer (`your-pr-reviewer`) on opus. Gate satisfied. Re-audit when adding any cascade peer.
 
 **Watch list:**
 - `debugger` is sonnet. Debugging often benefits from frontier reasoning; promote to opus if recurring symptom-vs-cause regressions appear.
 - Adding any new opus-cascade peer must come with an explicit model-tier justification in this appendix.
 
-### Cascade clarification (sentinel ≠ Anti-pattern B)
+### Cascade clarification (your-pr-reviewer ≠ Anti-pattern B)
 
-Sentinel calling spock + architect-reviewer + ai-architect *looks* like Anti-pattern B (persona-calls-persona) but is Pattern 3 (parallel fan-out with synthesizer):
+your-pr-reviewer calling your-cross-vendor-reviewer + architect-reviewer + ai-architect *looks* like Anti-pattern B (persona-calls-persona) but is Pattern 3 (parallel fan-out with synthesizer):
 
 - Peers run **in parallel**, not chained
-- Sentinel **synthesizes** all peer outputs into one verdict — peers don't synthesize each other
+- your-pr-reviewer **synthesizes** all peer outputs into one verdict — peers don't synthesize each other
 - The cascade is **cycle-bounded** (3-cycle cap, severity gating after cycle 1, finding-velocity convergence)
 - Each peer has a **distinct lens** (DevSecOps / architecture / AI-impact / cross-vendor) — not redundant perspectives
 
@@ -293,4 +293,4 @@ If a future agent's cascade lacks a synthesizer, parallel execution, or converge
 
 ### When to reach for Agent Teams
 
-Currently no production use. Reserve for competing-hypothesis debugging where teammates need to message each other (e.g. intermittent prod issue with multiple plausible root causes). For verdict on a known artifact, stick with sentinel's cascade.
+Currently no production use. Reserve for competing-hypothesis debugging where teammates need to message each other (e.g. intermittent prod issue with multiple plausible root causes). For verdict on a known artifact, stick with your-pr-reviewer's cascade.

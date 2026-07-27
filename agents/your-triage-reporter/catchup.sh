@@ -5,11 +5,11 @@ set -euo pipefail
 # (session-drain-check.sh) — the interactive session drains the queue, not this
 # headless one. Without this, the drain/generation `claude --print` calls below
 # would be injected with "go deliver pending reports" and hijacked.
-export VOLTAGE_NO_DRAIN=1
+export YOUR_TRIAGE_AGENT_NO_DRAIN=1
 
-LOGDIR="$HOME/.claude/agents/voltage-reporter/logs"
-REPORTS_DIR="$HOME/voltage/wiki/reports/daily"
-RUNNER="$HOME/.claude/agents/voltage-reporter/run.sh"
+LOGDIR="$HOME/.claude/agents/your-triage-reporter/logs"
+REPORTS_DIR="$HOME/your-triage-agent/wiki/reports/daily"
+RUNNER="$HOME/.claude/agents/your-triage-reporter/run.sh"
 
 mkdir -p "$LOGDIR" "$REPORTS_DIR"
 
@@ -20,7 +20,7 @@ mkdir -p "$LOGDIR" "$REPORTS_DIR"
 # generated-but-undelivered report (the 2026-05-29 case) would sit forever.
 # This loop drains the queue every catchup tick (every 4h + at load), so a
 # delivery stranded by an offline window self-heals on the next online tick.
-PENDING_DIR="$HOME/.claude/agents/voltage-reporter/pending-dm"
+PENDING_DIR="$HOME/.claude/agents/your-triage-reporter/pending-dm"
 mkdir -p "$PENDING_DIR"
 shopt -s nullglob
 for pending in "$PENDING_DIR"/*.md; do

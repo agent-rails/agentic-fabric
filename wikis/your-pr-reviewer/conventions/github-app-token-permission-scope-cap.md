@@ -44,4 +44,4 @@ Any match is a token with uncapped installation scope.
 
 | Date | PR | Repo | How It Manifested |
 |------|-----|------|-------------------|
-| 2026-06-03 | [#72](https://github.com/your-org/workflow-templates/pull/72) | workflow-templates | `image-tag-sync.yml` minted an App installation token for protected-branch commits. PR header claimed `contents:write` scope but the original step omitted `permission-contents: write`. Token inherited all installation grants. FIXED in-cycle: `permission-contents: write` added to scope-cap the minted token. Surfaced by cross-vendor reviewer (spock); sentinel did not independently flag. |
+| 2026-06-03 | [#72](https://github.com/your-org/workflow-templates/pull/72) | workflow-templates | `image-tag-sync.yml` minted an App installation token for protected-branch commits. PR header claimed `contents:write` scope but the original step omitted `permission-contents: write`. Token inherited all installation grants. FIXED in-cycle: `permission-contents: write` added to scope-cap the minted token. Surfaced by cross-vendor reviewer (your-cross-vendor-reviewer); your-pr-reviewer did not independently flag. |

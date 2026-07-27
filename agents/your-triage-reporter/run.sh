@@ -5,17 +5,17 @@ set -euo pipefail
 # (session-drain-check.sh) — else a headless generation/delivery session would
 # get injected with "go deliver pending reports", derailing it. The interactive
 # session is the one that should drain; this one only generates + queues.
-export VOLTAGE_NO_DRAIN=1
+export YOUR_TRIAGE_AGENT_NO_DRAIN=1
 
-LOGDIR="$HOME/.claude/agents/voltage-reporter/logs"
+LOGDIR="$HOME/.claude/agents/your-triage-reporter/logs"
 mkdir -p "$LOGDIR"
 
 TARGET_DATE="${1:-$(date +%Y-%m-%d)}"
 DOW=$(date -j -f "%Y-%m-%d" "$TARGET_DATE" +%u 2>/dev/null || date -d "$TARGET_DATE" +%u)
 
-DAILY_FILE="$HOME/voltage/wiki/reports/daily/${TARGET_DATE}.md"
-WEEKLY_FILE="$HOME/voltage/wiki/reports/weekly/${TARGET_DATE}.md"
-PENDING_DIR="$HOME/.claude/agents/voltage-reporter/pending-dm"
+DAILY_FILE="$HOME/your-triage-agent/wiki/reports/daily/${TARGET_DATE}.md"
+WEEKLY_FILE="$HOME/your-triage-agent/wiki/reports/weekly/${TARGET_DATE}.md"
+PENDING_DIR="$HOME/.claude/agents/your-triage-reporter/pending-dm"
 mkdir -p "$PENDING_DIR"
 
 if [ -f "$DAILY_FILE" ]; then
@@ -27,15 +27,15 @@ IS_FRIDAY=false
 [ "$DOW" = "5" ] && IS_FRIDAY=true
 
 if [ "$IS_FRIDAY" = "true" ]; then
-    GEN_PROMPT="Generate a weekly report for TARGET_DATE: ${TARGET_DATE}. This includes today's daily report plus the weekly summary. Read user identity from user memory. Save daily to ~/voltage/wiki/reports/daily/${TARGET_DATE}.md and weekly to ~/voltage/wiki/reports/weekly/${TARGET_DATE}.md. Do NOT attempt to DM via Slack — orchestrator handles delivery. Git commit in ~/voltage/."
+    GEN_PROMPT="Generate a weekly report for TARGET_DATE: ${TARGET_DATE}. This includes today's daily report plus the weekly summary. Read user identity from user memory. Save daily to ~/your-triage-agent/wiki/reports/daily/${TARGET_DATE}.md and weekly to ~/your-triage-agent/wiki/reports/weekly/${TARGET_DATE}.md. Do NOT attempt to DM via Slack — orchestrator handles delivery. Git commit in ~/your-triage-agent/."
 else
-    GEN_PROMPT="Generate a daily report for TARGET_DATE: ${TARGET_DATE}. Read user identity from user memory. Save to ~/voltage/wiki/reports/daily/${TARGET_DATE}.md. Do NOT attempt to DM via Slack — orchestrator handles delivery. Git commit in ~/voltage/."
+    GEN_PROMPT="Generate a daily report for TARGET_DATE: ${TARGET_DATE}. Read user identity from user memory. Save to ~/your-triage-agent/wiki/reports/daily/${TARGET_DATE}.md. Do NOT attempt to DM via Slack — orchestrator handles delivery. Git commit in ~/your-triage-agent/."
 fi
 
 echo "$(date -Iseconds) run: $TARGET_DATE (friday=$IS_FRIDAY)" >> "$LOGDIR/run.log"
 
 # Step 1: generate report (agent has no Slack tools by design)
-claude --agent voltage-reporter --print --permission-mode auto --max-budget-usd 5 -p "$GEN_PROMPT" >> "$LOGDIR/run.log" 2>&1
+claude --agent your-triage-reporter --print --permission-mode auto --max-budget-usd 5 -p "$GEN_PROMPT" >> "$LOGDIR/run.log" 2>&1
 
 # Step 2: orchestrator-side delivery (default claude session, full plugin access)
 deliver_via_slack() {

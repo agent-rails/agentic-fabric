@@ -1,18 +1,18 @@
-# Sentinel Wiki — Purpose
+# your-pr-reviewer Wiki — Purpose
 
-This file declares **why** the sentinel wiki exists. For **how** the wiki is structured and maintained, see `schema.md`.
+This file declares **why** the your-pr-reviewer wiki exists. For **how** the wiki is structured and maintained, see `schema.md`.
 
-Every sentinel and sentinel-scribe invocation reads this file alongside `schema.md` so the reviewer knows what to flag, what to cite, and what to let slide.
+Every your-pr-reviewer and your-pr-review-scribe invocation reads this file alongside `schema.md` so the reviewer knows what to flag, what to cite, and what to let slide.
 
 ## Core purpose
 
-Sentinel is the persistent memory of a Principal DevSecOps Architect's PR review function. It exists so that institutional knowledge from every PR — anti-patterns, repo conventions, author tendencies, incident histories — compounds over time into sharper, faster, more context-aware reviews. The goal is not "review more PRs"; the goal is **each review references the lessons of every prior review**.
+your-pr-reviewer is the persistent memory of a Principal DevSecOps Architect's PR review function. It exists so that institutional knowledge from every PR — anti-patterns, repo conventions, author tendencies, incident histories — compounds over time into sharper, faster, more context-aware reviews. The goal is not "review more PRs"; the goal is **each review references the lessons of every prior review**.
 
-A junior reviewer reads each PR fresh. A senior reviewer carries scar tissue from past incidents. Sentinel is the durable scar tissue.
+A junior reviewer reads each PR fresh. A senior reviewer carries scar tissue from past incidents. your-pr-reviewer is the durable scar tissue.
 
 ## Key questions this wiki should be able to answer
 
-If sentinel cannot answer these in <30 seconds from the wiki, the wiki has failed its purpose:
+If your-pr-reviewer cannot answer these in <30 seconds from the wiki, the wiki has failed its purpose:
 
 - Has a similar anti-pattern been flagged in this repo before? What was the incident?
 - What conventions does `{repo}` follow that this PR might violate?
@@ -25,20 +25,20 @@ If sentinel cannot answer these in <30 seconds from the wiki, the wiki has faile
 
 ## Review philosophy this wiki enforces
 
-- **Engineering excellence, not style nitpicking.** Style is in scope for linters, not for sentinel.
+- **Engineering excellence, not style nitpicking.** Style is in scope for linters, not for your-pr-reviewer.
 - **Every flag must cite evidence in the diff.** No hypothetical concerns, no speculation.
 - **Anti-patterns with incident history carry more weight than aesthetic preferences.**
 - **Necessity gate first (Step 0):** a correct implementation of an unnecessary feature is worse than a slightly-wrong implementation of a useful one. Catch the wrong PR before reviewing the right code.
 - **Cycle bounds prevent reviewer-creep:** 3-cycle cap, severity gating, convergence-required-for-blocking after cycle 1, finding-velocity convergence.
 - **Default to executing the diff:** static reasoning misses bugs runtime exposes. See `conventions/execute-before-review.md`.
-- **Cross-vendor cascade by default:** single-vendor reasoning has systematic blind spots; spock cascades unless skip rule fires. See `conventions/cascade-default-policy.md`.
+- **Cross-vendor cascade by default:** single-vendor reasoning has systematic blind spots; your-cross-vendor-reviewer cascades unless skip rule fires. See `conventions/cascade-default-policy.md`.
 
 ## What this wiki is NOT
 
 - **Not a substitute for running the code.** The wiki tells you what to look for; the diff and the test suite tell you whether it's there.
-- **Not a style guide.** Style lives in linters / formatters / language conventions, not in sentinel.
+- **Not a style guide.** Style lives in linters / formatters / language conventions, not in your-pr-reviewer.
 - **Not the source of truth for repo state.** Always read the actual repo (CI, code, configs) before citing it. Wiki entries can be stale.
-- **Not autonomous.** Sentinel reviews and surfaces; the human merges. Cycle-cap residuals convert to follow-ups, not silent approvals.
+- **Not autonomous.** your-pr-reviewer reviews and surfaces; the human merges. Cycle-cap residuals convert to follow-ups, not silent approvals.
 
 ## Evolving thesis
 
@@ -46,25 +46,25 @@ What this wiki is learning over time, updated as patterns crystallise:
 
 - **Anti-patterns are the highest-value pages**: hard-earned negative space with incident citations beats any abstract "best practice"
 - **Author pages improve review precision faster than repo pages**: per-person patterns recur across repos; per-repo patterns are noisier
-- **Cross-vendor disagreements are the most informative findings**: when sentinel and spock converge, confidence is high; when they diverge, the user learns the most about both reviewers' blind spots
+- **Cross-vendor disagreements are the most informative findings**: when your-pr-reviewer and your-cross-vendor-reviewer converge, confidence is high; when they diverge, the user learns the most about both reviewers' blind spots
 - **Conventions/ pages outlive patterns/ pages**: a convention applies to N future PRs; a pattern citation may apply to one
 - **Cycle 1 catches the obvious; cycle 2 catches the structural; cycle 3 is usually noise** — the cycle cap exists for a reason
 - **Unprimed convergence is the only real convergence**: priming a reviewer with prior-cycle findings causes anchoring; declared convergence under priming is suspect
-- **Shared facts about people / repos / decisions belong in `~/.claude/shared-wiki/`**, not duplicated here — sentinel links out, doesn't fork the source of truth
+- **Shared facts about people / repos / decisions belong in `~/.claude/shared-wiki/`**, not duplicated here — your-pr-reviewer links out, doesn't fork the source of truth
 
 ## Promotion path
 
-Facts in sentinel that become cross-cutting (multiple agents need them) are candidates for promotion to `~/.claude/shared-wiki/`. Promotion requires explicit user direction — sentinel-scribe never writes to shared-wiki. When a promotion candidate appears (e.g., a durable architectural decision worth respecting across all agents, a stable cross-cutting fact about a repo), sentinel surfaces it in the review output for the user to confirm.
+Facts in your-pr-reviewer that become cross-cutting (multiple agents need them) are candidates for promotion to `~/.claude/shared-wiki/`. Promotion requires explicit user direction — your-pr-review-scribe never writes to shared-wiki. When a promotion candidate appears (e.g., a durable architectural decision worth respecting across all agents, a stable cross-cutting fact about a repo), your-pr-reviewer surfaces it in the review output for the user to confirm.
 
 ## Read order for a fresh review
 
 1. `~/.claude/shared-wiki/index.md` → `identity.md`, `people.md`, `repos.md`, `decisions.md`
-2. `~/sentinel/purpose.md` (this file)
-3. `~/sentinel/schema.md`
-4. `~/sentinel/wiki/repos/{repo}.md`
-5. `~/sentinel/wiki/authors/{author}.md`
-6. `~/sentinel/wiki/pending/follow-ups.md`
-7. Relevant `~/sentinel/wiki/conventions/*.md` pages
-8. Relevant `~/sentinel/wiki/anti-patterns/*.md` pages (Glob first, Read 1–2 best matches)
+2. `~/your-pr-reviewer/purpose.md` (this file)
+3. `~/your-pr-reviewer/schema.md`
+4. `~/your-pr-reviewer/wiki/repos/{repo}.md`
+5. `~/your-pr-reviewer/wiki/authors/{author}.md`
+6. `~/your-pr-reviewer/wiki/pending/follow-ups.md`
+7. Relevant `~/your-pr-reviewer/wiki/conventions/*.md` pages
+8. Relevant `~/your-pr-reviewer/wiki/anti-patterns/*.md` pages (Glob first, Read 1–2 best matches)
 
 Missing pages are not errors; they mean no prior context for that entity. The scribe creates them after the review.
