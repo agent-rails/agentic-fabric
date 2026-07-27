@@ -7,7 +7,7 @@
 # can silently weaken the rules every future review is graded against.
 #
 # Protected paths (both are gate artifacts):
-#   ~/sentinel/wiki/conventions/**   — the review rubric (cascade policy,
+#   ~/your-pr-reviewer/wiki/conventions/**   — the review rubric (cascade policy,
 #                                      evidence contract, execution rules)
 #   ~/.claude/shared-wiki/**         — authoritative copies of cross-agent
 #                                      principles referenced by review agents
@@ -63,7 +63,7 @@ if ! command -v jq >/dev/null 2>&1; then
   # Degraded mode: cannot parse the payload. Fail closed for gate paths via
   # raw substring match; warn loudly otherwise instead of silently no-opping.
   case "$input" in
-    *"/sentinel/wiki/conventions/"*|*"/.claude/shared-wiki/"*)
+    *"/your-pr-reviewer/wiki/conventions/"*|*"/.claude/shared-wiki/"*)
       unlock_fresh && exit 0
       printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"protect-gate-pages: jq unavailable; payload matched a protected gate path (fail-closed). Install jq, or run `touch ~/.claude/gate-unlock` (valid 15 min) and retry."}}\n'
       exit 0
@@ -81,7 +81,7 @@ if [ -z "$fp" ]; then
 fi
 
 case "$fp" in
-  "$HOME/sentinel/wiki/conventions/"*|"$HOME/.claude/shared-wiki/"*)
+  "$HOME/your-pr-reviewer/wiki/conventions/"*|"$HOME/.claude/shared-wiki/"*)
     unlock_fresh && exit 0
     deny "Gate page protected (human-approved edits only): ${fp}. Review-gate/convention artifacts must not be edited by the agents they govern. To edit deliberately: run \`touch ~/.claude/gate-unlock\` (valid 15 min) and retry."
     ;;

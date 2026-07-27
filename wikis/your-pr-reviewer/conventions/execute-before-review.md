@@ -30,7 +30,7 @@ For chart-specific edge cases, walk the [Helm / Go-template review checklist](./
 
 The reviewer surfaces the opt-out reason in the review output. Acceptable constraints:
 
-- **Egress / data sensitivity** — codex would see private content not approved for external review (spock's egress screen handles this automatically; document in the review if non-execution was due to egress).
+- **Egress / data sensitivity** — codex would see private content not approved for external review (your-cross-vendor-reviewer's egress screen handles this automatically; document in the review if non-execution was due to egress).
 - **Side effects** — apply / migration / state-mutating operations cannot run as part of review. ONLY read-only operations (`plan`, `validate`, `dry-run`, `template`) qualify as "executable."
 - **Cost** — long CI runs (>10 min), cloud API spend. Weigh against bug-cost.
 - **Tooling unavailable** — no local cluster for k8s integration, no codex CLI, etc.
@@ -39,8 +39,8 @@ The reviewer surfaces the opt-out reason in the review output. Acceptable constr
 
 ## Where this gets enforced
 
-- **Sentinel** (`agents/sentinel.md`) — Step 3 (Analyze) runs the relevant execute pass before producing own findings. If execution is skipped, surface the reason in the review header.
-- **Spock** (`agents/spock.md`) — codex prompt includes "execute first" guidance; codex's sandbox supports `helm`, `terraform`, `terragrunt`, `pytest`, `yarn test` etc. in read-only mode.
+- **your-pr-reviewer** (`agents/your-pr-reviewer.md`) — Step 3 (Analyze) runs the relevant execute pass before producing own findings. If execution is skipped, surface the reason in the review header.
+- **your-cross-vendor-reviewer** (`agents/your-cross-vendor-reviewer.md`) — codex prompt includes "execute first" guidance; codex's sandbox supports `helm`, `terraform`, `terragrunt`, `pytest`, `yarn test` etc. in read-only mode.
 - **Review-pr skill** (`skills/review-pr/SKILL.md`) — orchestrator-side step before spawning agents: detect testable surfaces in the diff, run them, include results in PR_PREFETCH.
 - **Author** — before requesting review, run the same pass locally. The reviewer should not be the first to notice a failing test.
 

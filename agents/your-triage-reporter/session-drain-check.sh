@@ -1,5 +1,5 @@
 #!/bin/bash
-# SessionStart drain check for voltage daily reports.
+# SessionStart drain check for your-triage-agent daily reports.
 #
 # Why this exists: the 21:00 delivery cron (run.sh) + 4h catchup deliver via a
 # headless `claude --print` Slack session, which CANNOT reach the claude.ai
@@ -11,7 +11,7 @@
 # deliver + clear them. Delivery slips from 21:00 to "next interactive session".
 #
 # Guards:
-#   - VOLTAGE_NO_DRAIN=1  → the cron sets this before its own `claude` calls, so
+#   - YOUR_TRIAGE_AGENT_NO_DRAIN=1  → the cron sets this before its own `claude` calls, so
 #     a headless generation/delivery session never gets hijacked by this drain.
 #   - source == compact   → never inject mid-session (compaction is not a fresh
 #     interactive start; injecting "go deliver" would interrupt active work).
@@ -22,9 +22,9 @@ set -eo pipefail
 # else the drain would silently no-op and reports would pile up again.
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
 
-[ -n "${VOLTAGE_NO_DRAIN:-}" ] && exit 0
+[ -n "${YOUR_TRIAGE_AGENT_NO_DRAIN:-}" ] && exit 0
 
-PENDING_DIR="$HOME/.claude/agents/voltage-reporter/pending-dm"
+PENDING_DIR="$HOME/.claude/agents/your-triage-reporter/pending-dm"
 
 input=$(cat 2>/dev/null || true)
 source=$(printf '%s' "$input" | jq -r '.source // "startup"' 2>/dev/null || echo startup)
