@@ -26,11 +26,11 @@ flowchart TD
     user["USER (orchestrator)"]
     harness["Claude Code: rules + hooks + shared-wiki"]
     user -->|slash command| harness
-    harness --> voltage["voltage: triage / reports"]
-    harness --> sentinel["sentinel: PR review synthesizer"]
-    sentinel -.cross-vendor.-> spock["spock / scotty (Codex CLI)"]
-    voltage <--> vwiki[("~/voltage wiki")]
-    sentinel <--> swiki[("~/sentinel wiki")]
+    harness --> your-triage-agent["your-triage-agent: triage / reports"]
+    harness --> your-pr-reviewer["your-pr-reviewer: PR review synthesizer"]
+    your-pr-reviewer -.cross-vendor.-> your-cross-vendor-reviewer["your-cross-vendor-reviewer / your-patch-drafter (Codex CLI)"]
+    your-triage-agent <--> vwiki[("~/your-triage-agent wiki")]
+    your-pr-reviewer <--> swiki[("~/your-pr-reviewer wiki")]
 ```
 
 Full diagrams and control flow: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
@@ -47,8 +47,8 @@ Required for the core triage + PR-review path:
 
 Optional, per feature:
 
-- **macOS** — only for the launchd daily/weekly report automation (`launchd/`, `agents/voltage-reporter/run.sh` uses BSD `date`).
-- **[OpenAI Codex CLI](https://github.com/openai/codex)** — only for the cross-vendor reviewer/patch-drafter (`spock`, `scotty` run `codex exec --sandbox read-only`). Skip if you don't use `/review-pr`'s cross-vendor cascade or `/draft-pr-fixes`.
+- **macOS** — only for the launchd daily/weekly report automation (`launchd/`, `agents/your-triage-reporter/run.sh` uses BSD `date`).
+- **[OpenAI Codex CLI](https://github.com/openai/codex)** — only for the cross-vendor reviewer/patch-drafter (`your-cross-vendor-reviewer`, `your-patch-drafter` run `codex exec --sandbox read-only`). Skip if you don't use `/review-pr`'s cross-vendor cascade or `/draft-pr-fixes`.
 - **A Slack app / MCP connector** — only for report delivery and Slack triage (`/daily-report`, `/triage`). Read-only Slack search plus a send tool on the main thread.
 
 Not required: no Node/npm, no build step — these are prompts, shell hooks, and markdown.
@@ -63,9 +63,9 @@ cp -R agents skills commands scripts rules shared-wiki ~/.claude/
 chmod +x ~/.claude/scripts/*.sh ~/.claude/scripts/*.py
 
 # 2. Seed the agent wikis (machinery only; data fills itself through use)
-mkdir -p ~/voltage ~/sentinel
-cp -R wikis/voltage/. ~/voltage/
-cp -R wikis/sentinel/. ~/sentinel/
+mkdir -p ~/your-triage-agent ~/your-pr-reviewer
+cp -R wikis/your-triage-agent/. ~/your-triage-agent/
+cp -R wikis/your-pr-reviewer/. ~/your-pr-reviewer/
 
 # 3. Find every placeholder you must replace (see table below)
 grep -rn "your-org\|youralias\|YOUR_SLACK\|you@example.com\|/Users/youruser" ~/.claude
@@ -97,7 +97,7 @@ Replace in your `~/.claude` copy before use. The grep in step 3 finds all of the
 After restarting Claude Code:
 
 - **Skills load** — open the slash-command menu (`/`) and confirm `/triage`, `/review-pr`, `/self-review` appear. `/help` lists available commands.
-- **Agents load** — the agent names in `agents/` (voltage, sentinel, ...) resolve when referenced.
+- **Agents load** — the agent names in `agents/` (your-triage-agent, your-pr-reviewer, ...) resolve when referenced.
 - **Hooks fire** — the branch-prefix gate is the easiest check: ask the agent to create a branch that does *not* start with your alias (e.g. `git checkout -b test-branch`). The hook should block it with a message telling you to use your `<alias>/` prefix. A `<alias>/...` branch should succeed.
 - **PR gate** — asking the agent to run `gh pr create` without `--draft` should be denied with a "Review-first PR workflow required" message.
 
@@ -110,7 +110,7 @@ Once installed, drive the stack through slash commands:
 | Command | When to use |
 |---------|-------------|
 | `/triage` | Morning multi-channel sweep — classify email/Slack, draft replies (sending stays human-gated). |
-| `/review-pr <url>` | Review a PR with the sentinel synthesizer; cascades cross-vendor peers on security/arch paths. |
+| `/review-pr <url>` | Review a PR with the your-pr-reviewer synthesizer; cascades cross-vendor peers on security/arch paths. |
 | `/self-review` | Review your own local branch before opening a PR. |
 | `/draft-pr-fixes` | After a review, have the cross-vendor drafter propose patches for cherry-pick (never auto-applied). |
 | `/pr-sizer` | Check whether a PR is too large and get a split plan. |
@@ -125,7 +125,7 @@ The daily/weekly reports run on a launchd schedule and deliver via Slack.
 
 1. Copy the plists in `launchd/` to `~/Library/LaunchAgents/`, replacing every `/Users/youruser/...` path with your real home.
 2. Load them with `launchctl` (macOS LaunchAgents).
-3. Reports generate offline and queue; delivery is a separate step handled by the main (interactive) session via the `SessionStart` drain hook, so headless runs never silently drop a report. See `agents/voltage-reporter/`.
+3. Reports generate offline and queue; delivery is a separate step handled by the main (interactive) session via the `SessionStart` drain hook, so headless runs never silently drop a report. See `agents/your-triage-reporter/`.
 
 Slack delivery needs a Slack app / MCP connector with a send tool available on the main thread, plus your Slack user ID wired per the `YOUR_SLACK_USER_ID` placeholder.
 
@@ -146,7 +146,7 @@ These are prompts and hooks that drive an agent with real tool access (shell, `g
 
 - **Review before you run.** Read the agent definitions, skills, and hook scripts before copying them into `~/.claude/`.
 - **Keep outbound actions human-gated.** Message sends and PR merges are gated by design (see the PR-create draft gate and the `[Send]/[Edit]/[Skip]` triage flow); keep them that way.
-- **Cross-vendor CLIs run read-only.** `spock`/`scotty` wrap `codex exec --sandbox read-only` and never write files — the orchestrator applies any patch under your permission model.
+- **Cross-vendor CLIs run read-only.** `your-cross-vendor-reviewer`/`your-patch-drafter` wrap `codex exec --sandbox read-only` and never write files — the orchestrator applies any patch under your permission model.
 
 To report a vulnerability, see [SECURITY.md](SECURITY.md).
 ## Placeholders
