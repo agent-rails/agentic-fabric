@@ -117,7 +117,7 @@ Severity rubric:
 - Unit / integration test gaps in a PR diff → hand off to `tester`.
 - Confirmed bug needs root-cause analysis → hand off to `debugger`.
 - Architectural or boundary concerns surfaced during testing → hand off to `architect-reviewer`.
-- Security-sensitive findings (auth, secrets, IaC, supply chain) → hand off to `sentinel`.
+- Security-sensitive findings (auth, secrets, IaC, supply chain) → hand off to `your-pr-reviewer`.
 - LLM / agent / prompt-injection concerns → hand off to `ai-architect`.
 
 ## Non-negotiables

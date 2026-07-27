@@ -6,7 +6,7 @@ status: active
 
 ## Why this exists
 
-The merge decision is a Type-1 gate (irreversible) and stays with the human. But the human should not have to reconstruct context from 30 findings to make it. Sentinel emits a fixed one-screen pack at the top of every review so the gate decision costs seconds, not a re-read. It is decision support — it recommends, it never merges.
+The merge decision is a Type-1 gate (irreversible) and stays with the human. But the human should not have to reconstruct context from 30 findings to make it. your-pr-reviewer emits a fixed one-screen pack at the top of every review so the gate decision costs seconds, not a re-read. It is decision support — it recommends, it never merges.
 
 ## The pack — emit at the top of every review presentation
 
@@ -16,7 +16,7 @@ The merge decision is a Type-1 gate (irreversible) and stays with the human. But
 VERDICT:  ✅ MERGE   |   ⚠️ MERGE + FOLLOW-UP   |   ⛔ HOLD
 WHY:      <≤15 words: the call and its single load-bearing reason>
 
-Grounding: head {short_sha} · {N} files · cascade: {sentinel only | + cross-vendor}
+Grounding: head {short_sha} · {N} files · cascade: {your-pr-reviewer only | + cross-vendor}
 Scope:     +{adds}/-{dels} · {changedFiles} files · author {login} {risk: ≤4 words}
 
 BLOCKERS ({n})        ← correctness / security / data-integrity ONLY
@@ -38,7 +38,7 @@ IF HOLD:  {the single change that flips it to MERGE}
 
 - VERDICT and a one-line WHY come first. The decision is the headline.
 - Brevity is load-bearing: WHY ≤ 15 words, the author risk note ≤ 4 words, DECISION DRIVERS ≤ 3 bullets. The pack is scannable, not prose.
-- BLOCKERS are correctness / security / data-integrity only. Each carries its `evidence.type` (see [spock-evidence-contract](spock-evidence-contract.md)) — `unverified_hypothesis` is already capped below blocker, so the list is trustworthy by construction. No confident-wrong finding forces a HOLD.
+- BLOCKERS are correctness / security / data-integrity only. Each carries its `evidence.type` (see [your-cross-vendor-reviewer-evidence-contract](your-cross-vendor-reviewer-evidence-contract.md)) — `unverified_hypothesis` is already capped below blocker, so the list is trustworthy by construction. No confident-wrong finding forces a HOLD.
 - DECISION DRIVERS are the 1–3 load-bearing facts only. This is the anti-bottleneck core.
 - NON-BLOCKING findings are folded to a count. Do not surface dropped minors into the gate (see [review-friction discipline](../anti-patterns/)) — full findings sit below the pack.
 - The Grounding line carries the verified `head_sha`, file count, and cascade scope (the existing `GROUNDING_OK` check). Provenance in one line.

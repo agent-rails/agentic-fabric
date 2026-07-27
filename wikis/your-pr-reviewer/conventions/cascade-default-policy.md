@@ -2,15 +2,15 @@
 
 **Status**: active since 2026-05-11
 **Owner**: review-pr workflow
-**Decision**: option 2 from cascade-policy proposal — spock-by-default with narrow skip rule
+**Decision**: option 2 from cascade-policy proposal — your-cross-vendor-reviewer-by-default with narrow skip rule
 
 ## Policy
 
-`spock` (cross-vendor codex-backed reviewer) cascades on **every PR review by default**. The orchestrator spawns sentinel + spock as peers and passes spock's output to sentinel for synthesis.
+`your-cross-vendor-reviewer` (cross-vendor codex-backed reviewer) cascades on **every PR review by default**. The orchestrator spawns your-pr-reviewer + your-cross-vendor-reviewer as peers and passes your-cross-vendor-reviewer's output to your-pr-reviewer for synthesis.
 
 ### Skip rule
 
-Skip the spock cascade only when ALL three conditions hold:
+Skip the your-cross-vendor-reviewer cascade only when ALL three conditions hold:
 
 1. **Docs-only diff** — every changed file matches one of: `*.md`, `docs/**`, README, comments-only changes inside source files
 2. **Diff size < 100 LOC** — total `additions + deletions` from `gh pr view {n} --json files`
@@ -22,7 +22,7 @@ Skip the spock cascade only when ALL three conditions hold:
 
 ### Always cascade (no skip override)
 
-The Security-Critical Path Filter list from `agents/sentinel.md` — auth, hooks, secrets, IAM, prod IaC, classifier engine, threat-model docs. The skip rule does NOT override these. If a docs PR amends `docs/security/*-RFC.md` it still cascades.
+The Security-Critical Path Filter list from `agents/your-pr-reviewer.md` — auth, hooks, secrets, IAM, prod IaC, classifier engine, threat-model docs. The skip rule does NOT override these. If a docs PR amends `docs/security/*-RFC.md` it still cascades.
 
 ## Why
 
@@ -43,8 +43,8 @@ Counter-pressure exists: `anti-patterns/cross-vendor-cascade-overreach-on-docs-s
 
 1. Fetch `gh pr view {n} --json files,additions,deletions` (already part of grounding).
 2. Evaluate skip rule against the file list and total LOC.
-3. If skip rule does **not** apply → spawn sentinel + spock as peers; pass spock output to sentinel for synthesis.
-4. If skip rule **does** apply → spawn sentinel only.
+3. If skip rule does **not** apply → spawn your-pr-reviewer + your-cross-vendor-reviewer as peers; pass your-cross-vendor-reviewer output to your-pr-reviewer for synthesis.
+4. If skip rule **does** apply → spawn your-pr-reviewer only.
 5. Respect existing path filters for architect-reviewer and ai-architect per their own triggers.
 
 ## Anti-carve-out: re-reviews on small focused diffs do NOT qualify for cascade skip
@@ -63,7 +63,7 @@ This is the same dynamic as convergence-review-new-content-gap ([[anti-patterns/
 | Cycle 1 | In-house + cross-vendor cascade. Verdict: REQUEST_CHANGES. 1 BLOCKER (thirdParty precedence not implemented), 2 HIGH (unknown-key validation; hardcoded failedRunThreshold), 3 MEDIUM, 1 LOW. Review <review-id-1>. |
 | Cycle 2 head | `<sha-2>` (fix commits `<sha-1>` + `<sha-2>`). Author addressed 4 findings, pushed back on 3. |
 | Cascade decision | **Skipped** — judgment was "small focused diff addressing already-agreed findings." Posted APPROVE (review <review-id-2>). |
-| Backstop (post-approval) | User ran cross-vendor backstop. Found 1 MEDIUM + 1 nice-to-have sentinel missed. |
+| Backstop (post-approval) | User ran cross-vendor backstop. Found 1 MEDIUM + 1 nice-to-have your-pr-reviewer missed. |
 | Miss | `thirdParty` per-env override key precedence for 3rd-party templates is undocumented in JSDoc and README (only an internal monitoring guide documents it). A caller using an unknown key against a URL-monitor template gets no error and the value is silently discarded — typed-valid key, value silently ignored. Same footgun class as cycle-1's unknown-key validation HIGH, one layer up. Filed as follow-up comment (issue #<comment-id>). |
 | Root cause | Cycle-2 focus on the four addressed findings narrowed attention away from the adjacent documentation surface. Cross-vendor lens independently re-walked the template contract and caught the gap. |
 
@@ -100,7 +100,7 @@ Reopen this carve-out only if **future docs-as-infra-template PRs surface cross-
 
 ## References
 
-- `agents/sentinel.md` § Cross-Vendor Cascade Default
+- `agents/your-pr-reviewer.md` § Cross-Vendor Cascade Default
 - `skills/review-pr/SKILL.md` § Execution
 - `anti-patterns/cycle-1-review-declares-closed-without-cross-vendor-validation`
 - `anti-patterns/cross-vendor-cascade-overreach-on-docs-spec-prs`

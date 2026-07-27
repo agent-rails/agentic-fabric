@@ -1,16 +1,16 @@
 ---
 name: wiki-lint
-description: Health-check the LLM wikis (voltage, sentinel, shared-wiki). Surfaces stale pages, orphans, contradictions, broken cross-links, and frontmatter gaps. Read-only — never auto-edits. Use when user asks for "wiki lint", "wiki health", "wiki audit", "stale wiki pages", or as a weekly cadence task. Pair with the regular triage / review cadence to keep institutional knowledge from rotting.
-argument-hint: "[voltage|sentinel|shared|all] (defaults to all)"
+description: Health-check the LLM wikis (your-triage-agent, your-pr-reviewer, shared-wiki). Surfaces stale pages, orphans, contradictions, broken cross-links, and frontmatter gaps. Read-only — never auto-edits. Use when user asks for "wiki lint", "wiki health", "wiki audit", "stale wiki pages", or as a weekly cadence task. Pair with the regular triage / review cadence to keep institutional knowledge from rotting.
+argument-hint: "[your-triage-agent|your-pr-reviewer|shared|all] (defaults to all)"
 ---
 
 Health-check the LLM wiki layers and surface drift before it compounds. This is the named version of the `[STALE]` / `[CONFLICT]` discipline already documented in each wiki's `schema.md` — promoted to an explicit operation per the nashsu/llm_wiki lint pattern.
 
 ## Input
 
-- `/wiki-lint` — lint all three layers (`voltage`, `sentinel`, `shared-wiki`)
-- `/wiki-lint voltage` — lint only `~/voltage/`
-- `/wiki-lint sentinel` — lint only `~/sentinel/`
+- `/wiki-lint` — lint all three layers (`your-triage-agent`, `your-pr-reviewer`, `shared-wiki`)
+- `/wiki-lint your-triage-agent` — lint only `~/your-triage-agent/`
+- `/wiki-lint your-pr-reviewer` — lint only `~/your-pr-reviewer/`
 - `/wiki-lint shared` — lint only `~/.claude/shared-wiki/`
 
 Default: all.
@@ -41,7 +41,7 @@ A page is an orphan if no other page in the SAME wiki links to it via `[[page-na
 - Pages in `pending/` (they are queues, not link targets)
 - Pages in `reports/daily/` and `reports/weekly/` (they are time-series, not link targets)
 
-Cross-wiki links do not count for orphan detection — a sentinel page linked only from voltage is still considered orphan within sentinel.
+Cross-wiki links do not count for orphan detection — a your-pr-reviewer page linked only from your-triage-agent is still considered orphan within your-pr-reviewer.
 
 ### 4. Frontmatter gap pass
 
@@ -75,8 +75,8 @@ These are retrofit-on-touch — do not block on these; surface counts only.
 ```
 | Wiki | Stale | Conflicts | Orphans | Frontmatter Gaps | Broken Links | Purpose |
 |------|-------|-----------|---------|------------------|--------------|---------|
-| voltage  | N | N | N | N | N | OK / STALE / MISSING |
-| sentinel | N | N | N | N | N | OK / STALE / MISSING |
+| your-triage-agent  | N | N | N | N | N | OK / STALE / MISSING |
+| your-pr-reviewer | N | N | N | N | N | OK / STALE / MISSING |
 | shared   | N | N | N | N | N | OK / STALE / MISSING |
 ```
 
@@ -87,8 +87,8 @@ These are retrofit-on-touch — do not block on these; surface counts only.
 7. At the end, suggest the highest-leverage triage actions (≤5):
 
    - "Resolve [CONFLICT] in X (oldest)"
-   - "Close or escalate N pending items in voltage/pending/actions.md (>14d)"
-   - "Decide on N orphans in sentinel/wiki/anti-patterns/ (link or delete)"
+   - "Close or escalate N pending items in your-triage-agent/pending/actions.md (>14d)"
+   - "Decide on N orphans in your-pr-reviewer/wiki/anti-patterns/ (link or delete)"
    - "Refresh last_verified on N stale repo pages"
 
 ## Cadence
@@ -105,13 +105,13 @@ Run weekly, paired with the weekly-report cadence. Add `/wiki-lint` invocation t
 |------|-------|-----------|---------|------------------|--------------|---------|
 ...
 
-## voltage
+## your-triage-agent
 ### Stale (N)
-- `~/voltage/wiki/people/example.md` — last_verified 2026-01-15 (134 days)
+- `~/your-triage-agent/wiki/people/example.md` — last_verified 2026-01-15 (134 days)
 - ...
 
 ### Conflicts (N)
-- `~/voltage/wiki/services/example.md:42` — [CONFLICT] description here
+- `~/your-triage-agent/wiki/services/example.md:42` — [CONFLICT] description here
 
 ### Orphans (N)
 - ...
@@ -124,7 +124,7 @@ Run weekly, paired with the weekly-report cadence. Add `/wiki-lint` invocation t
 
 ### Purpose: OK | STALE | MISSING
 
-## sentinel
+## your-pr-reviewer
 ...
 
 ## shared

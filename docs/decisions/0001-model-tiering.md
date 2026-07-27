@@ -22,11 +22,11 @@ The tasks split cleanly by *kind*:
 
 Tier by task kind (Option 3):
 
-- **opus** — `voltage`, `sentinel`, cascade peers (`architect-review`, `ai-architect`, `spock`, `scotty`), `orchestrator`, `architect`, `tester`, `context-manager`.
-- **haiku** — `voltage-fetcher`, `sentinel-fetcher`, built-in `Explore`. Large input, digest output.
-- **sonnet** — `voltage-scribe`, `sentinel-scribe`, `voltage-reporter`, `researcher`, `implementer`, `senior-qa`, `debugger`. Mechanical or single-perspective.
+- **opus** — `your-triage-agent`, `your-pr-reviewer`, cascade peers (`architect-review`, `ai-architect`, `your-cross-vendor-reviewer`, `your-patch-drafter`), `orchestrator`, `architect`, `tester`, `context-manager`.
+- **haiku** — `your-triage-fetcher`, `your-pr-review-fetcher`, built-in `Explore`. Large input, digest output.
+- **sonnet** — `your-triage-scribe`, `your-pr-review-scribe`, `your-triage-reporter`, `researcher`, `implementer`, `senior-qa`, `debugger`. Mechanical or single-perspective.
 
-The one guard that makes this safe: the **cascade peer gate**. A Pattern-3 peer's `model:` MUST be ≥ the synthesizer's tier. If sentinel is opus, every peer that feeds it is opus — a weak peer produces findings the synthesizer literally cannot recover, so the cascade degrades silently. Research isolation (Pattern 5) and sequential steps (Pattern 4) may use cheaper tiers because there is no peer-merge to poison.
+The one guard that makes this safe: the **cascade peer gate**. A Pattern-3 peer's `model:` MUST be ≥ the synthesizer's tier. If your-pr-reviewer is opus, every peer that feeds it is opus — a weak peer produces findings the synthesizer literally cannot recover, so the cascade degrades silently. Research isolation (Pattern 5) and sequential steps (Pattern 4) may use cheaper tiers because there is no peer-merge to poison.
 
 ## Consequences
 

@@ -1,6 +1,6 @@
-# Sentinel Wiki — Schema
+# your-pr-reviewer Wiki — Schema
 
-This document defines the structure, ingestion rules, and page templates for the PR review wiki. Sentinel is the Principal DevOps Architect's code review agent — it builds institutional knowledge from every PR reviewed and uses that knowledge to give increasingly sharp, context-aware reviews.
+This document defines the structure, ingestion rules, and page templates for the PR review wiki. your-pr-reviewer is the Principal DevOps Architect's code review agent — it builds institutional knowledge from every PR reviewed and uses that knowledge to give increasingly sharp, context-aware reviews.
 
 ## Three-Layer Architecture
 
