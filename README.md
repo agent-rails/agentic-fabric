@@ -144,6 +144,17 @@ For the internals, the whys, and the decisions behind them, see [`docs/`](docs/)
 - Reuse a deterministic policy engine (agent-guard) for the write-content scan rather than a second bespoke heuristics implementation — one tested engine, two call sites (tool-call authorization and pre-write content)
 - Outbound actions (sends, merges) always human-gated
 
+## Customizing this stack
+
+The goal is a layer-0 set of building blocks, not a locked black box — adopt what's useful, replace or delete the rest, and build your own on top. Concretely, four things are already customization points, not just implementation details:
+
+- **Agent names are placeholders, not identity.** Nothing in the stack hard-codes the shipped codenames (`your-pr-reviewer`, `your-triage-agent`, ...) — rename each family to whatever you call your own agents. See [Placeholders](#placeholders).
+- **Agents are plain markdown, not compiled.** There's no plugin API to learn for behavior changes, because there's no runtime layer standing between you and the prompt — the prompt *is* the customization surface. Want `your-pr-reviewer` to check for something it doesn't today? Edit `agents/your-pr-reviewer.md` directly. No build step, no framework to fight.
+- **Policy-driven behavior is externalized, not hardcoded in scripts.** `scan-write-content.sh` reads its ruleset from `policies/write-content-scan.yaml` via an overridable env var (`SCAN_WRITE_CONTENT_POLICY`) rather than embedding patterns in the shell script itself — swap in your own policy file without touching the hook. This is the pattern to follow for any new script you add: config as data, script as glue.
+- **Hooks are a template to merge, not a config to apply as-is.** `docs/settings.hooks.example.json` is meant to be merged into your own `~/.claude/settings.json`, then edited — add hooks, remove the ones you don't want, reorder them. Nothing here assumes you'll run the full set.
+
+If you build something new on top of this — a different reviewer cascade, a different wiki backend, a different policy engine — that's the intended use, not a deviation from it.
+
 ## Security
 
 These are prompts and hooks that drive an agent with real tool access (shell, `git`, `gh`, Slack, and — if enabled — a second-vendor CLI that sends context to OpenAI servers). Treat them accordingly:
