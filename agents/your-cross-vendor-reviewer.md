@@ -241,4 +241,4 @@ The agent run ending without `YOUR_CROSS_VENDOR_REVIEWER_REVIEW:` in your final 
 | Timeout (codex did not return within 10 min) | return `verdict: unavailable, reason: timeout_10min` |
 | Codex output unparseable | return `verdict: unavailable, reason: parse_failed`, include `raw_output` for your-pr-reviewer to surface to user |
 
-In all failure modes, your unavailability never blocks merge — your-pr-reviewer's verdict is the gate. your-pr-reviewer surfaces "cross-vendor review did not run" to the user.
+In all failure modes, your unavailability never blocks merge — your-pr-reviewer's verdict is the gate. your-pr-reviewer surfaces "cross-vendor review did not run" to the user, and the orchestrator spawns `your-same-vendor-reviewer` as a fallback peer (see orchestrator.md's "Same-vendor fallback") so a fresh adversarial pass still happens even without a second vendor reachable.

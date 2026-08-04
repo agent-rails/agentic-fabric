@@ -21,6 +21,7 @@ Cadence is **manual** by design. The `schedule` skill creates remote cloud sessi
 - `~/.claude/skills/` — existing skill registry (detect already-codified workflows)
 - `~/your-triage-agent/wiki/recurring/workflow-tracking.md` — durable state (content hashes, stage_advanced_at)
 - `~/your-triage-agent/wiki/recurring/.invocations.jsonl` — append-only invocation log written by the `Skill` PreToolUse hook (one JSON object per line: `{timestamp, skill}`)
+- `~/.claude/projects/**/*.jsonl` — Claude Code's own session logs, read for tool-call NAME + timestamp frequency only, never `input` content (see REFERENCE.md's "Tool-call frequency source" — a deliberate, narrow exception to the transcript-mining non-goal below)
 
 NEVER write to source files. Only the two output files below.
 
@@ -68,6 +69,30 @@ Aggregate invocations from ~/your-triage-agent/wiki/recurring/.invocations.jsonl
 - For each tracked skill, set `invocations` = count and `last_invoked` = max(timestamp)
 - The JSONL is append-only and may not exist yet on first run — treat absence as 0 invocations
 
+Aggregate tool-call frequency from Claude Code's own session logs (per
+REFERENCE.md "Tool-call frequency source" — name+timestamp only, never
+`input`):
+- Glob ~/.claude/projects/**/*.jsonl; per line, filter on the NESTED
+  `message.type == "message"` (NOT the top-level `type`, which is
+  `"assistant"`/`"user"`/etc -- confirmed live this is the field that
+  actually equals the literal string "message"; other top-level types
+  like file-history-snapshot don't have a message.tool_use shape at all);
+  per message, filter `message.content[]` blocks where
+  `type == "tool_use"`; extract `name` from the block itself, and
+  `timestamp`/`sessionId`/`gitBranch` from the TOP-LEVEL log line (NOT
+  inside the block -- verified live, a tool_use block only has
+  `caller`/`id`/`input`/`name`/`type`; reading `block['timestamp']`
+  literally KeyErrors and halts under this skill's own fail-loud rule)
+- A line that fails to parse as JSON, or a message shape without
+  `content` -> skip that line, do not halt (append-only logs may have a
+  torn last line if read mid-write)
+- Missing ~/.claude/projects/ entirely -> treat as 0 entries
+- Group by `name`; compute `count` (total blocks), `distinct_days`
+  (distinct calendar dates), `last_used` (max timestamp)
+- Write this as its own table to ~/your-triage-agent/wiki/recurring/tool-call-frequency.md
+  (atomic overwrite) -- separate from workflow-candidates.md's ladder, since
+  name-only data can't support existing_skill/steps semantic matching
+
 Apply stage transitions per REFERENCE.md. Demote skill_proven entries unused
 >30 days to dormant. Never advance past `skill_candidate` without explicit
 prior approval recorded in workflow-tracking.md.
@@ -82,7 +107,8 @@ Trust internal parsing; do not wrap each step in try/except. Validate only at
 the source-read boundary and the schema boundary.
 
 Return JSON: { "run_date": "...", "window_days": N, "totals": {...},
-"top_5": [...], "newly_dormant": [...], "files_written": [...] }.
+"top_5": [...], "newly_dormant": [...], "tool_call_frequency_top_5": [...],
+"files_written": [...] }.
 ```
 
 ## Promotion ladder
@@ -113,6 +139,7 @@ User approval gates every transition. Skill never self-promotes.
 
 - `~/your-triage-agent/wiki/recurring/workflow-candidates.md` — full ladder (overwritten each run)
 - `~/your-triage-agent/wiki/recurring/workflow-tracking.md` — invocations, last-used, stage transitions
+- `~/your-triage-agent/wiki/recurring/tool-call-frequency.md` — tool-name usage frequency from session logs (overwritten each run; see REFERENCE.md)
 - Top-5 summary in chat for review
 
 See `REFERENCE.md` for full schema, scoring, and edge-handling principle.

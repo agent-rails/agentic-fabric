@@ -193,6 +193,60 @@ Edge handling:
 - Malformed JSONL line → skip that line; do not halt
 - Skill name not in tracking.md → ignore (untracked skill, no row to update)
 
+## Tool-call frequency source (session logs)
+
+A second, narrower exception to the "no transcript mining" non-goal.
+Claude Code writes every tool call to `~/.claude/projects/<project>/<session-id>.jsonl`
+already -- richer and more complete than a new hook could capture. This
+source is read for FREQUENCY only, never content:
+
+- Glob `~/.claude/projects/**/*.jsonl`
+- Per line: `json.loads`; keep only lines where the NESTED `message.type`
+  equals the literal string `"message"` -- NOT the top-level `type`
+  field (top-level `type` is `"assistant"`/`"user"`/etc; verified live,
+  only `assistant`-type lines ever have `message.type == "message"`, so
+  filtering on the nested field alone is sufficient, not a two-step
+  filter). The logs mix `message`, `file-history-snapshot`, and other
+  entry shapes at the top level. Skip a line that fails to parse as
+  JSON -- don't halt (same "trust internal parsing, validate only at
+  the read boundary" principle as the invocations log below)
+- Per message, iterate `message.content[]`, filter blocks where
+  `type == "tool_use"`
+- Extract `name` from the block itself. Extract `timestamp` from the
+  TOP-LEVEL log line, not the block -- verified live, a tool_use block
+  only has `caller`/`id`/`input`/`name`/`type`; `timestamp` (and
+  `sessionId`/`gitBranch`, present at the same top level but not
+  currently used by the output table below) live one level up.
+  **Never extract `input`** -- that is where file contents, Bash
+  commands, and any sensitive material embedded in them live. This is
+  the entire reason this source is allowed to exist at all despite the
+  transcript-mining non-goal above; extracting `input` would collapse
+  that distinction.
+- Missing `~/.claude/projects/` entirely -> treat as 0 entries (fail
+  soft; shouldn't happen on a machine that's run Claude Code at all, but
+  matches the invocations log's own missing-file handling)
+
+### Output shape
+
+Name-only data can't support the candidate ladder's semantic pattern
+matching (`steps`, `existing_skill` matching, etc. all need to know what
+a step actually *was*, not just its tool name) -- so this is a separate,
+lighter output, not merged into `workflow-candidates.md`'s ladder table:
+
+`~/your-triage-agent/wiki/recurring/tool-call-frequency.md` -- one table,
+overwritten each run:
+
+| Field | Type | Notes |
+|-------|------|-------|
+| tool_name | string | e.g. `Bash`, `Write`, `Edit` |
+| count | int | total tool_use blocks with this name in window |
+| distinct_days | int | distinct calendar dates the tool was used |
+| last_used | date | max timestamp for this tool in window |
+
+This is raw frequency, feeding whatever efficiency/cost-optimization work
+you scope separately -- not a mining output that proposes skills or crons
+on its own.
+
 ## Orchestration manifest
 
 Promoted candidates (stage 2+) get a row in
@@ -207,7 +261,13 @@ disable the underlying primitive (cron entry, hook, agent).
 
 ## Non-goals
 
-- Mining transcript history (too heavy, privacy-sensitive)
+- Mining transcript CONTENT (message text, tool_use reasoning/results) --
+  too heavy, privacy-sensitive. Tool-call NAMES + timestamps from Claude
+  Code's own session logs are a deliberate, narrower exception (see
+  "Tool-call frequency source" below): same shape as the existing
+  .invocations.jsonl precedent, never reads tool_use.input, so file
+  contents/commands/any sensitive material embedded in them never enter
+  the mining pipeline.
 - Real-time pattern detection (batch only)
 - Auto-creating skill files (proposal only — user runs `skill-management`)
 - Auto-creating cron triggers (proposal only — user runs `schedule`)

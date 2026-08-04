@@ -8,11 +8,12 @@ Built and dogfooded daily over months of real DevOps/SRE work. Sanitized for por
 
 | Dir | Contents |
 |-----|----------|
-| `agents/` | Agent definitions. Two families plus build/QA roles: **your-triage-agent** (chief-of-staff: multi-channel triage, tiered classification + routing verdicts, draft replies, wiki memory) with fetcher/scribe/reporter subagents; **your-pr-reviewer** (PR review synthesizer: evidence-calibrated severity, review-cycle convergence bounds, wiki-backed repo/author memory) with fetcher/scribe, **your-cross-vendor-reviewer** (cross-vendor reviewer via a second model family) and **your-patch-drafter** (cross-vendor patch drafter). Plus orchestrator, researcher, implementer, tester, debugger, architect(s), senior-qa, context-manager. |
+| `agents/` | Agent definitions. Two families plus build/QA roles: **your-triage-agent** (chief-of-staff: multi-channel triage, tiered classification + routing verdicts, draft replies, wiki memory) with fetcher/scribe/reporter subagents; **your-pr-reviewer** (PR review synthesizer: evidence-calibrated severity, review-cycle convergence bounds, wiki-backed repo/author memory) with fetcher/scribe, **your-cross-vendor-reviewer** (cross-vendor reviewer via a second model family) and **your-patch-drafter** (cross-vendor patch drafter). **your-same-vendor-reviewer** is the automatic fallback for your-cross-vendor-reviewer when no second-vendor CLI is reachable — a fresh, unprimed, same-model adversarial pass, explicitly self-labeled `cross_vendor: false` so it's never mistaken for real cross-vendor signal. Plus orchestrator, researcher, implementer, tester, debugger, architect(s), senior-qa, context-manager. |
 | `agents/your-triage-reporter/` | launchd-driven daily/weekly report automation: `run.sh` (21:00 cron), `catchup.sh` (4h backfill), `session-drain-check.sh` (SessionStart hook that delivers queued reports when an interactive session can reach Slack — headless runs can't reach OAuth connectors). |
-| `skills/` | Slash-command workflows: `/triage`, `/daily-report`, `/weekly-report`, `/standup`, `/review-pr`, `/draft-pr-fixes`, `/self-review`, `/pr-sizer`, `/workflow-miner`, `/memory-lint`, `/wiki-lint`, `/ci-investigation`, session management, delegation patterns, and more. |
+| `skills/` | Slash-command workflows: `/triage`, `/daily-report`, `/weekly-report`, `/standup`, `/review-pr`, `/draft-pr-fixes`, `/self-review`, `/pr-sizer`, `/workflow-miner`, `/memory-lint`, `/wiki-lint`, `/ci-investigation`, session management, delegation patterns, and more. `/workflow-miner` also mines tool-call frequency from Claude Code's own session logs (name+timestamp only, never content) as a lightweight efficiency signal, alongside its recurring-task-pattern ladder. |
 | `commands/` | Older-style command prompts (PR summary, design doc, prompt-writing guide, standup). |
-| `scripts/` | PreToolUse hooks: branch-prefix enforcement (`youralias/` gate), PR-create gate, wiki gate-page protection, skill scanner. |
+| `scripts/` | PreToolUse hooks: branch-prefix enforcement (`youralias/` gate), PR-create gate, wiki gate-page protection, skill scanner, pre-write malicious-content scan. |
+| `policies/` | Declarative policy for the pre-write content scan (`write-content-scan.yaml`), evaluated by [agent-guard](https://github.com/voltagebots/agent-guard) — a separate, real, deterministic tool-call-authorization library, not part of this bundle. |
 | `rules/` | Global rules files (general, git, planning, prompting, python, typescript, testing). |
 | `shared-wiki/` | Cross-agent convention pages: agent principles, search discipline, orchestration patterns (incl. the persona-to-pattern mapping). |
 | `wikis/your-triage-agent/`, `wikis/your-pr-reviewer/` | The wiki *machinery* for each agent's persistent memory: purpose, schema, page templates, convention pages, helper scripts. Wiki *data* (people, logs, reviews, reports) deliberately excluded. |
@@ -29,6 +30,7 @@ flowchart TD
     harness --> your-triage-agent["your-triage-agent: triage / reports"]
     harness --> your-pr-reviewer["your-pr-reviewer: PR review synthesizer"]
     your-pr-reviewer -.cross-vendor.-> your-cross-vendor-reviewer["your-cross-vendor-reviewer / your-patch-drafter (Codex CLI)"]
+    your-cross-vendor-reviewer -.fallback if unavailable.-> your-same-vendor-reviewer["your-same-vendor-reviewer (same model family)"]
     your-triage-agent <--> vwiki[("~/your-triage-agent wiki")]
     your-pr-reviewer <--> swiki[("~/your-pr-reviewer wiki")]
 ```
@@ -48,8 +50,9 @@ Required for the core triage + PR-review path:
 Optional, per feature:
 
 - **macOS** — only for the launchd daily/weekly report automation (`launchd/`, `agents/your-triage-reporter/run.sh` uses BSD `date`).
-- **[OpenAI Codex CLI](https://github.com/openai/codex)** — only for the cross-vendor reviewer/patch-drafter (`your-cross-vendor-reviewer`, `your-patch-drafter` run `codex exec --sandbox read-only`). Skip if you don't use `/review-pr`'s cross-vendor cascade or `/draft-pr-fixes`.
+- **[OpenAI Codex CLI](https://github.com/openai/codex)** — only for the cross-vendor reviewer/patch-drafter (`your-cross-vendor-reviewer`, `your-patch-drafter` run `codex exec --sandbox read-only`). Skip if you don't use `/review-pr`'s cross-vendor cascade or `/draft-pr-fixes` — `your-same-vendor-reviewer` runs automatically in its place either way, so cross-vendor review is a quality upgrade, not a hard dependency.
 - **A Slack app / MCP connector** — only for report delivery and Slack triage (`/daily-report`, `/triage`). Read-only Slack search plus a send tool on the main thread.
+- **[agent-guard](https://github.com/voltagebots/agent-guard)** (`pipx install "agentguard[yaml] @ git+https://github.com/voltagebots/agent-guard.git"`, then `pipx inject agentguard pyyaml`) — only for `scripts/scan-write-content.sh`, the pre-write malicious-content scan. Skip if you don't wire that hook; the rest of the bundle has no dependency on it.
 
 Not required: no Node/npm, no build step — these are prompts, shell hooks, and markdown.
 
@@ -59,7 +62,7 @@ Minimal path to a working triage + PR-review setup. Run from the repo root after
 
 ```bash
 # 1. Copy the agent stack into your Claude Code config
-cp -R agents skills commands scripts rules shared-wiki ~/.claude/
+cp -R agents skills commands scripts rules shared-wiki policies ~/.claude/
 chmod +x ~/.claude/scripts/*.sh ~/.claude/scripts/*.py
 
 # 2. Seed the agent wikis (machinery only; data fills itself through use)
@@ -137,8 +140,20 @@ For the internals, the whys, and the decisions behind them, see [`docs/`](docs/)
 - Hooks over prompts for anything that must not be skipped
 - Wikis as persistent memory — every session reads from and writes back to them
 - Evidence-calibrated review severity: unverified BLOCKER claims get downgraded
-- Cross-vendor cascade for reasoning diversity on security-critical paths
+- Cross-vendor cascade for reasoning diversity on security-critical paths, with a same-vendor fallback so a fresh adversarial pass still runs when no second vendor is reachable
+- Reuse a deterministic policy engine (agent-guard) for the write-content scan rather than a second bespoke heuristics implementation — one tested engine, two call sites (tool-call authorization and pre-write content)
 - Outbound actions (sends, merges) always human-gated
+
+## Customizing this stack
+
+The goal is a layer-0 set of building blocks, not a locked black box — adopt what's useful, replace or delete the rest, and build your own on top. Concretely, four things are already customization points, not just implementation details:
+
+- **Agent names are placeholders, not identity.** Nothing in the stack hard-codes the shipped codenames (`your-pr-reviewer`, `your-triage-agent`, ...) — rename each family to whatever you call your own agents. See [Placeholders](#placeholders).
+- **Agents are plain markdown, not compiled.** There's no plugin API to learn for behavior changes, because there's no runtime layer standing between you and the prompt — the prompt *is* the customization surface. Want `your-pr-reviewer` to check for something it doesn't today? Edit `agents/your-pr-reviewer.md` directly. No build step, no framework to fight.
+- **Policy-driven behavior is externalized, not hardcoded in scripts.** `scan-write-content.sh` reads its ruleset from `policies/write-content-scan.yaml` via an overridable env var (`SCAN_WRITE_CONTENT_POLICY`) rather than embedding patterns in the shell script itself — swap in your own policy file without touching the hook. This is the pattern to follow for any new script you add: config as data, script as glue.
+- **Hooks are a template to merge, not a config to apply as-is.** `docs/settings.hooks.example.json` is meant to be merged into your own `~/.claude/settings.json`, then edited — add hooks, remove the ones you don't want, reorder them. Nothing here assumes you'll run the full set.
+
+If you build something new on top of this — a different reviewer cascade, a different wiki backend, a different policy engine — that's the intended use, not a deviation from it.
 
 ## Security
 
@@ -167,6 +182,7 @@ Everything below is a placeholder to replace with your own values. The agent nam
 | `your-pr-review-fetcher` | Rename to your own agent name — PR-review data-fetcher subagent | Required-if-used |
 | `your-pr-review-scribe` | Rename to your own agent name — PR-review wiki-scribe subagent | Required-if-used |
 | `your-cross-vendor-reviewer` | Rename to your own agent name — cross-vendor (second model family) reviewer | Required-if-used |
+| `your-same-vendor-reviewer` | Rename to your own agent name — automatic same-vendor fallback when the cross-vendor reviewer is unavailable | Required-if-used |
 | `your-patch-drafter` | Rename to your own agent name — cross-vendor patch drafter | Required-if-used |
 
 Env-var and structured-block names derive from the same base names (e.g. `YOUR_TRIAGE_AGENT_NO_DRAIN`, `YOUR_CROSS_VENDOR_REVIEWER_INPUT`, `YOUR_CROSS_VENDOR_REVIEWER_REVIEW`, `YOUR_PATCH_DRAFTER_DRAFT`) — rename them to match whatever you pick.
@@ -175,7 +191,7 @@ Env-var and structured-block names derive from the same base names (e.g. `YOUR_T
 
 1. Copy `agents/`, `skills/`, `commands/`, `scripts/`, `rules/`, `shared-wiki/` content into `~/.claude/`
 2. Seed `~/your-triage-agent/` and `~/your-pr-reviewer/` from `wikis/` (schema + templates; wikis fill themselves through use)
-3. Replace every placeholder (`grep -r "your-org\|youralias\|YOUR_SLACK\|you@example.com\|your-triage-\|your-pr-review\|your-cross-vendor-reviewer\|your-patch-drafter" .`) — see [Placeholders](#placeholders)
+3. Replace every placeholder (`grep -r "your-org\|youralias\|YOUR_SLACK\|you@example.com\|your-triage-\|your-pr-review\|your-cross-vendor-reviewer\|your-same-vendor-reviewer\|your-patch-drafter" .`) — see [Placeholders](#placeholders)
 4. Wire hooks per `docs/settings.hooks.example.json`; load launchd plists if you want scheduled reports
 
 ## Contributing
