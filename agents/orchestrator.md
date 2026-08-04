@@ -29,6 +29,8 @@ Treat shared-wiki as authoritative for cross-cutting facts. If conversation cont
 
 **Note on cross-vendor review**: your-pr-reviewer internally cascades to `your-cross-vendor-reviewer` (a utility agent wrapping the OpenAI Codex CLI) on security-critical paths. The orchestrator does NOT invoke your-cross-vendor-reviewer directly. your-pr-reviewer synthesizes your-cross-vendor-reviewer's findings with its own wiki-backed review and returns a single verdict.
 
+**Same-vendor fallback**: if `your-cross-vendor-reviewer` returns `verdict: unavailable` (most commonly `reason: cli_missing` — no second-vendor CLI installed on this machine), the orchestrator spawns `your-same-vendor-reviewer` in its place, same `REVIEW_MODE` and same target diff/plan. This is NOT a substitute for cross-vendor reasoning diversity — it is a fresh, unprimed, adversarial-framed pass from the same model family, which still catches real things a single primed pass would miss, just not the vendor-diversity class of bug. your-pr-reviewer's synthesis tags its findings `(your-same-vendor-reviewer same-vendor)`, never `(your-cross-vendor-reviewer cross-vendor)`, and the user-facing summary states plainly that cross-vendor review did not run this time.
+
 ## Plan-Validation Routing
 
 Choose the reviewer based on the files the plan would touch. If both app code AND DevOps paths are touched, invoke both in parallel.
@@ -45,7 +47,7 @@ Choose the reviewer based on the files the plan would touch. If both app code AN
 - `**/cloudflare-*/**`, `**/wrangler.toml`
 - CODEOWNERS, branch-protection configs, `.pre-commit-config.yaml` when affecting deployable artifacts
 
-When the path is **security-critical** (a subset your-pr-reviewer determines internally — hooks, auth, secrets, prod-IaC, classifier engine), your-pr-reviewer automatically cascades to `your-cross-vendor-reviewer` for cross-vendor verification. The orchestrator does NOT need to route to your-cross-vendor-reviewer; your-pr-reviewer handles the cascade. your-pr-reviewer returns ONE synthesized verdict that includes both perspectives.
+When the path is **security-critical** (a subset your-pr-reviewer determines internally — hooks, auth, secrets, prod-IaC, classifier engine), your-pr-reviewer automatically cascades to `your-cross-vendor-reviewer` for cross-vendor verification, falling back to `your-same-vendor-reviewer` if `your-cross-vendor-reviewer` is unavailable (see "Same-vendor fallback" above). The orchestrator does NOT need to route to either directly; your-pr-reviewer handles the cascade. your-pr-reviewer returns ONE synthesized verdict that includes both perspectives.
 
 **Route to `architect-reviewer` (plan_validation)** for everything else — application source (src, lib, packages, services) where SOLID/DDD/coupling matter.
 
@@ -194,7 +196,7 @@ TEST_EXPECTATIONS:
   - Approve → proceed to PR creation
   - Approve_with_conditions → surface conditions to user; user decides whether to address before opening PR or in a follow-up
   - Block → DO NOT auto-create PR; surface findings to user; require explicit user override to proceed without addressing
-  - your-cross-vendor-reviewer unavailable (CLI missing / quota / egress block / timeout) → your-pr-reviewer proceeds on its own verdict and flags to user that cross-vendor review did not run
+  - your-cross-vendor-reviewer unavailable (CLI missing / quota / egress block / timeout) → orchestrator spawns your-same-vendor-reviewer as a fallback peer; your-pr-reviewer synthesizes its findings tagged same-vendor and flags to the user that cross-vendor review specifically did not run (a same-vendor pass ran in its place)
 
 ### 10) Open PR
 - Construct PR body using the seven required sections (per repo's `.github/PULL_REQUEST_TEMPLATE.md` if present): Why, Architectural framing, Alternatives considered + rejected, Tradeoffs accepted, Blast radius, Soak / rollout plan, Risk to call out

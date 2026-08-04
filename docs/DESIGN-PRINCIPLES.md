@@ -51,6 +51,7 @@ On security-critical paths, a second model *family* (codex-backed `your-cross-ve
 
 - Bounded on purpose: parallel peers, one synthesizer (your-pr-reviewer), a 3-cycle cap with severity gating and convergence detection — otherwise the cascade loops as the reviewer board grows.
 - `your-cross-vendor-reviewer` is never invoked directly by the orchestrator — only by your-pr-reviewer, as a cascade step, when a path is genuinely security-critical. Cost is real; spend it where blind spots hurt. See [ADR-0005](decisions/0005-cross-vendor-cascade.md).
+- **Honest degradation, not silent loss of coverage.** When no second-vendor CLI is reachable, the orchestrator does not just skip the cascade — it spawns `your-same-vendor-reviewer`, a same-model-family fallback that still runs a fresh, unprimed, adversarial pass with the same evidence-calibration discipline. It explicitly self-labels `cross_vendor: false` everywhere in its output, and your-pr-reviewer's synthesis tags its findings `(same-vendor)` rather than `(cross-vendor)`, so a genuine capability gap never gets quietly presented as full coverage.
 
 ## 7. Outbound actions are always human-gated
 

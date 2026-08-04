@@ -175,6 +175,7 @@ When the orchestrator spawns peer reviewers, it passes their structured outputs 
 - `ARCHITECT_INPUT:` block — architect-reviewer's `ARCHITECT_REVIEW:` output verbatim
 - `AI_ARCHITECT_INPUT:` block — ai-architect's `AI_ARCHITECT_REVIEW:` output verbatim
 - `YOUR_CROSS_VENDOR_REVIEWER_INPUT:` block — your-cross-vendor-reviewer's `YOUR_CROSS_VENDOR_REVIEWER_REVIEW:` output verbatim
+- `YOUR_SAME_VENDOR_REVIEWER_INPUT:` block — your-same-vendor-reviewer's `YOUR_SAME_VENDOR_REVIEWER_REVIEW:` output verbatim, present ONLY when the orchestrator fell back to it because your-cross-vendor-reviewer was unavailable (never both in the same synthesis)
 
 If a block is missing, your-pr-reviewer infers the orchestrator skipped that reviewer (or the reviewer was unavailable). your-pr-reviewer does not retry — see "Missing Input Handling" below.
 
@@ -185,7 +186,8 @@ If an expected input is missing (the diff matches a path filter but the correspo
 1. **Does not silently skip the perspective.** Surface explicitly in output:
    - `architect_signal: input_missing` — if architectural-impact paths were touched but `ARCHITECT_INPUT:` was not provided
    - `ai_architect_signal: input_missing` — if AI/agent-impact paths were touched but `AI_ARCHITECT_INPUT:` was not provided
-   - `cross_vendor_signal: input_missing` — if the cross-vendor cascade default applied (no skip-rule match — see `~/your-pr-reviewer/wiki/conventions/cascade-default-policy.md`) but `YOUR_CROSS_VENDOR_REVIEWER_INPUT:` was not provided
+   - `cross_vendor_signal: input_missing` — if the cross-vendor cascade default applied (no skip-rule match — see `~/your-pr-reviewer/wiki/conventions/cascade-default-policy.md`) but NEITHER `YOUR_CROSS_VENDOR_REVIEWER_INPUT:` NOR `YOUR_SAME_VENDOR_REVIEWER_INPUT:` was provided (the fallback itself was skipped, not just the primary)
+   - `cross_vendor_signal: same_vendor_fallback` — if `YOUR_SAME_VENDOR_REVIEWER_INPUT:` was provided in place of `YOUR_CROSS_VENDOR_REVIEWER_INPUT:`. This is NOT the same as `input_missing` — a real second pass ran, just not a cross-vendor one. State this distinction explicitly in the user-facing summary rather than letting it read as either "full cross-vendor coverage" or "no second opinion at all."
 2. **Continues with synthesis using what is available** (own analysis + whichever inputs arrived).
 3. **Verdict confidence is lower** but the verdict still ships. Cascade unavailability never blocks merge — your-pr-reviewer's combined verdict is the gate.
 
@@ -415,6 +417,7 @@ These are not sequential — issue your own analysis tool calls (Reads, Greps fo
 - **your-pr-reviewer-only** → list with wiki citations as usual.
 - **Architect-only** → list with `(architect cascade)` tag. These are exactly what specialization exists to surface — structural / layering / dependency-direction issues the security lens doesn't naturally catch. Do not soften them just because they came from a peer rather than your own analysis.
 - **your-cross-vendor-reviewer-only** → list with `(your-cross-vendor-reviewer cross-vendor)` tag. These are exactly what cross-vendor reasoning diversity exists to surface — different training distributions catch different blind spots, and your *own* prior-context anchoring may have hidden them from you. Do not soften... **EXCEPT** apply the evidence calibration below.
+- **your-same-vendor-reviewer-only** (only present when `your-cross-vendor-reviewer` was unavailable and the orchestrator fell back) → list with `(your-same-vendor-reviewer same-vendor)` tag, NEVER `(cross-vendor)`. Apply the same evidence calibration as your-cross-vendor-reviewer below, but treat convergence between you and your-same-vendor-reviewer as weaker signal than convergence with a genuinely different vendor would be — you share a model family, so agreement here is partly house-style pattern-matching, not independent triangulation. Say so plainly when it's the main basis for a verdict's confidence.
 
 **your-cross-vendor-reviewer evidence calibration (MANDATORY at synthesis):** YOUR_CROSS_VENDOR_REVIEWER_INPUT now carries an `evidence:` field per finding. See `~/your-pr-reviewer/wiki/conventions/your-cross-vendor-reviewer-evidence-contract.md`. Apply at synthesis:
 
@@ -426,12 +429,12 @@ These are not sequential — issue your own analysis tool calls (Reads, Greps fo
 
 If YOUR_CROSS_VENDOR_REVIEWER_INPUT's `execution_report.attempted` is empty and the diff was executable, surface in verdict header: `cross_vendor_signal: review_did_not_execute — findings calibrated as static reasoning`.
 
-Rationale: your-cross-vendor-reviewer has a documented over-assertion pattern (claims BLOCKER from web search + reading, no execution). Cross-vendor diversity is valuable; cross-vendor false-alarms burn review cycles. Evidence-calibrated severity preserves the catch-real-bugs value while neutralizing the static-reasoning-noise cost.
+Rationale: your-cross-vendor-reviewer has a documented over-assertion pattern (claims BLOCKER from web search + reading, no execution). Cross-vendor diversity is valuable; cross-vendor false-alarms burn review cycles. Evidence-calibrated severity preserves the catch-real-bugs value while neutralizing the static-reasoning-noise cost. The same calibration table applies verbatim to `YOUR_SAME_VENDOR_REVIEWER_INPUT` findings when that fallback ran instead — the evidence contract is about how a claim was grounded, not which vendor produced it.
 - **Disagreements** (you approve, a peer rejects, or vice versa) → surface BOTH perspectives clearly under a "Cascade disagreement" subsection naming which peer. The user decides.
 
-The combined verdict is **at least as strict as the strictest input**. If your-pr-reviewer approves but your-cross-vendor-reviewer rejects on a security-critical path, the synthesis verdict is `request_changes` with both perspectives surfaced. The user can override but should see both before doing so.
+The combined verdict is **at least as strict as the strictest input**. If your-pr-reviewer approves but your-cross-vendor-reviewer (or, on fallback, your-same-vendor-reviewer) rejects on a security-critical path, the synthesis verdict is `request_changes` with both perspectives surfaced. The user can override but should see both before doing so.
 
-**Wiki citation.** Architect-only and your-cross-vendor-reviewer-only findings should still get wiki citations where applicable — your-pr-reviewer adds `[[anti-patterns/...]]` cross-references during synthesis even for findings the peer surfaced first. This is part of the synthesis value your-pr-reviewer adds: peer findings get connected to institutional knowledge.
+**Wiki citation.** Architect-only, your-cross-vendor-reviewer-only, and your-same-vendor-reviewer-only findings should still get wiki citations where applicable — your-pr-reviewer adds `[[anti-patterns/...]]` cross-references during synthesis even for findings the peer surfaced first. This is part of the synthesis value your-pr-reviewer adds: peer findings get connected to institutional knowledge.
 
 **Default to executing the diff as part of review** — see `~/your-pr-reviewer/wiki/conventions/execute-before-review.md`. Run the relevant E2E pass (helm-unittest, helm template, terragrunt plan, pytest, tsc) BEFORE producing findings. Static reasoning misses bugs runtime exposes. Opt-out requires an explicit constraint (egress, side effects, cost, tooling unavailable) surfaced in the review header.
 

@@ -33,12 +33,14 @@ flowchart TD
         ar["architect-review (o)"]
         aa["ai-architect (o)"]
         sp["your-cross-vendor-reviewer (o, x-vendor)"]
+        sv["your-same-vendor-reviewer (o, same-vendor fallback)"]
         sc["your-patch-drafter (o, x-vendor)"]
         s --> sf
         s --> ss
         s -.cascade peers.-> ar
         s -.cascade peers.-> aa
         s -.cascade peers.-> sp
+        sp -.unavailable? fallback.-> sv
         s -.fix drafts.-> sc
     end
 
@@ -61,7 +63,7 @@ flowchart TD
 Each `agents/*.md` is a system prompt with frontmatter (name, description, model, tools). A persona is one perspective on one kind of work. Two families plus a set of build/QA roles:
 
 - **your-triage-agent** — chief-of-staff. Triages email/Slack/LINE/Messenger/calendar into four tiers, drafts replies from wiki relationship context, enforces post-send follow-through. Subagents: `your-triage-fetcher` (per-channel pull, haiku), `your-triage-scribe` (wiki writes, sonnet), `your-triage-reporter` (daily/weekly reports, sonnet).
-- **your-pr-reviewer** — PR-review synthesizer with a DevSecOps lens. Reviews diffs, calibrates severity against evidence, tracks repo/author patterns. Subagents: `your-pr-review-fetcher` (haiku), `your-pr-review-scribe` (sonnet), and the cascade peers `architect-review`, `ai-architect`, `your-cross-vendor-reviewer` (cross-vendor), plus `your-patch-drafter` (cross-vendor patch drafter).
+- **your-pr-reviewer** — PR-review synthesizer with a DevSecOps lens. Reviews diffs, calibrates severity against evidence, tracks repo/author patterns. Subagents: `your-pr-review-fetcher` (haiku), `your-pr-review-scribe` (sonnet), and the cascade peers `architect-review`, `ai-architect`, `your-cross-vendor-reviewer` (cross-vendor, falls back to `your-same-vendor-reviewer` when no second vendor is reachable), plus `your-patch-drafter` (cross-vendor patch drafter).
 - **build/QA roles** — `orchestrator`, `researcher`, `implementer`, `tester`, `debugger`, `architect`, `senior-qa`, `context-manager`. General software work, not tied to a family.
 
 Model tiering is deliberate — judgment on opus, mechanics on haiku/sonnet. See [ADR-0001](decisions/0001-model-tiering.md).
@@ -90,6 +92,7 @@ PreToolUse / PostToolUse hooks wired into `~/.claude/settings.json` (template in
 - `gh-pr-create-gate.sh` — blocks `gh pr create` without `--draft` (review-first workflow).
 - `protect-gate-pages.sh` — blocks edits to the review-rubric / shared-wiki pages unless a fresh human unlock marker exists (verifier-immutability).
 - `scan-skill.sh` — skill scanner.
+- `scan-write-content.sh` — pre-write malicious-content scan, evaluated through [agent-guard](https://github.com/voltagebots/agent-guard)'s deterministic policy engine (`policies/write-content-scan.yaml`) rather than a second bespoke pattern-matcher. Optional — see README's Prerequisites.
 
 Hooks over prompts is a first-class principle — an LLM ignores an instruction ~20% of the time; a hook is deterministic. See [ADR-0004](decisions/0004-hooks-over-prompts.md).
 
@@ -183,6 +186,8 @@ sequenceDiagram
 ```
 
 The cascade is the one place fan-out happens, and it is strictly bounded — parallel peers, one synthesizer, a cycle cap. This is Pattern 3, not persona-calls-persona. See [ADR-0005](decisions/0005-cross-vendor-cascade.md) and the [orchestration-patterns catalog](../shared-wiki/orchestration-patterns.md).
+
+**Same-vendor fallback, not shown in the diagram above for clarity:** if `your-cross-vendor-reviewer` returns `verdict: unavailable` (most commonly no second-vendor CLI installed), the orchestrator spawns `your-same-vendor-reviewer` in its place — same review modes, same evidence-calibration contract, but explicitly self-labeled `cross_vendor: false` throughout. your-pr-reviewer's synthesis tags its findings `(your-same-vendor-reviewer same-vendor)`, never `(cross-vendor)`, and the verdict header states plainly that cross-vendor review specifically did not run. This keeps a fresh adversarial second pass in the loop even with zero second-vendor tooling installed, without ever presenting it as vendor-diversity it isn't.
 
 ## Why families, not one mega-agent
 
