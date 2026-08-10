@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # PreToolUse guard: pre-write malicious-content check via agent-guard
-# (https://github.com/voltagebots/agent-guard — a separate, real dependency,
+# (https://github.com/agent-rails/agent-guard — a separate, real dependency,
 # not part of this bundle; install with pipx, see the Prerequisites section
 # of README.md).
 #
@@ -73,7 +73,7 @@ if [ -z "$content" ]; then
 fi
 
 if ! command -v guard >/dev/null 2>&1; then
-  deny "scan-write-content: 'guard' not found on PATH. Install with: pipx install \"agentguard[yaml] @ git+https://github.com/voltagebots/agent-guard.git\" (then: pipx inject agentguard pyyaml)."
+  deny "scan-write-content: 'guard' not found on PATH. Install with: pipx install \"toolcall-authz[yaml] @ git+https://github.com/agent-rails/agent-guard.git\" (then: pipx inject toolcall-authz pyyaml)."
   exit 0
 fi
 

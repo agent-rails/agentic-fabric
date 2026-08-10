@@ -68,7 +68,7 @@ done < "$SKILL_FILE"
 
 # --- Everything else: the shared, tested agent-guard policy engine ---
 if ! command -v guard >/dev/null 2>&1; then
-    report "HIGH" "'guard' not found on PATH — cannot run content-pattern checks (fail-closed). Install with: pipx install \"agentguard[yaml] @ git+https://github.com/voltagebots/agent-guard.git\" (then: pipx inject agentguard pyyaml)."
+    report "HIGH" "'guard' not found on PATH — cannot run content-pattern checks (fail-closed). Install with: pipx install \"toolcall-authz[yaml] @ git+https://github.com/agent-rails/agent-guard.git\" (then: pipx inject toolcall-authz pyyaml)."
 else
     file_content=$(cat "$SKILL_FILE")
     call_json=$(jq -nc --arg content "$file_content" '{tool:"write",args:{content:$content}}')

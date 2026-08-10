@@ -13,7 +13,7 @@ Built and dogfooded daily over months of real DevOps/SRE work. Sanitized for por
 | `skills/` | Slash-command workflows: `/triage`, `/daily-report`, `/weekly-report`, `/standup`, `/review-pr`, `/draft-pr-fixes`, `/self-review`, `/pr-sizer`, `/workflow-miner`, `/memory-lint`, `/wiki-lint`, `/ci-investigation`, session management, delegation patterns, and more. `/workflow-miner` also mines tool-call frequency from Claude Code's own session logs (name+timestamp only, never content) as a lightweight efficiency signal, alongside its recurring-task-pattern ladder. |
 | `commands/` | Older-style command prompts (PR summary, design doc, prompt-writing guide, standup). |
 | `scripts/` | PreToolUse hooks: branch-prefix enforcement (`youralias/` gate), PR-create gate, wiki gate-page protection, skill scanner, pre-write malicious-content scan. |
-| `policies/` | Declarative policy for the pre-write content scan (`write-content-scan.yaml`), evaluated by [agent-guard](https://github.com/voltagebots/agent-guard) — a separate, real, deterministic tool-call-authorization library, not part of this bundle. |
+| `policies/` | Declarative policy for the pre-write content scan (`write-content-scan.yaml`), evaluated by [agent-guard](https://github.com/agent-rails/agent-guard) — a separate, real, deterministic tool-call-authorization library, not part of this bundle. |
 | `rules/` | Global rules files (general, git, planning, prompting, python, typescript, testing). |
 | `shared-wiki/` | Cross-agent convention pages: agent principles, search discipline, orchestration patterns (incl. the persona-to-pattern mapping). |
 | `wikis/your-triage-agent/`, `wikis/your-pr-reviewer/` | The wiki *machinery* for each agent's persistent memory: purpose, schema, page templates, convention pages, helper scripts. Wiki *data* (people, logs, reviews, reports) deliberately excluded. |
@@ -52,7 +52,7 @@ Optional, per feature:
 - **macOS** — only for the launchd daily/weekly report automation (`launchd/`, `agents/your-triage-reporter/run.sh` uses BSD `date`).
 - **[OpenAI Codex CLI](https://github.com/openai/codex)** — only for the cross-vendor reviewer/patch-drafter (`your-cross-vendor-reviewer`, `your-patch-drafter` run `codex exec --sandbox read-only`). Skip if you don't use `/review-pr`'s cross-vendor cascade or `/draft-pr-fixes` — `your-same-vendor-reviewer` runs automatically in its place either way, so cross-vendor review is a quality upgrade, not a hard dependency.
 - **A Slack app / MCP connector** — only for report delivery and Slack triage (`/daily-report`, `/triage`). Read-only Slack search plus a send tool on the main thread.
-- **[agent-guard](https://github.com/voltagebots/agent-guard)** (`pipx install "agentguard[yaml] @ git+https://github.com/voltagebots/agent-guard.git"`, then `pipx inject agentguard pyyaml`) — only for `scripts/scan-write-content.sh`, the pre-write malicious-content scan. Skip if you don't wire that hook; the rest of the bundle has no dependency on it.
+- **[agent-guard](https://github.com/agent-rails/agent-guard)** (`pipx install "toolcall-authz[yaml] @ git+https://github.com/agent-rails/agent-guard.git"`, then `pipx inject toolcall-authz pyyaml`) — only for `scripts/scan-write-content.sh`, the pre-write malicious-content scan. Skip if you don't wire that hook; the rest of the bundle has no dependency on it.
 
 Not required: no Node/npm, no build step — these are prompts, shell hooks, and markdown.
 

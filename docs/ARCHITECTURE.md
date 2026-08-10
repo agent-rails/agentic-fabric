@@ -92,7 +92,7 @@ PreToolUse / PostToolUse hooks wired into `~/.claude/settings.json` (template in
 - `gh-pr-create-gate.sh` — blocks `gh pr create` without `--draft` (review-first workflow).
 - `protect-gate-pages.sh` — blocks edits to the review-rubric / shared-wiki pages unless a fresh human unlock marker exists (verifier-immutability).
 - `scan-skill.sh` — skill scanner.
-- `scan-write-content.sh` — pre-write malicious-content scan, evaluated through [agent-guard](https://github.com/voltagebots/agent-guard)'s deterministic policy engine (`policies/write-content-scan.yaml`) rather than a second bespoke pattern-matcher. Optional — see README's Prerequisites.
+- `scan-write-content.sh` — pre-write malicious-content scan, evaluated through [agent-guard](https://github.com/agent-rails/agent-guard)'s deterministic policy engine (`policies/write-content-scan.yaml`) rather than a second bespoke pattern-matcher. Optional — see README's Prerequisites.
 
 Hooks over prompts is a first-class principle — an LLM ignores an instruction ~20% of the time; a hook is deterministic. See [ADR-0004](decisions/0004-hooks-over-prompts.md).
 
