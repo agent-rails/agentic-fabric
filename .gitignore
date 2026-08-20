@@ -1,0 +1,3 @@
+# Ephemeral continuation records — runtime operational state, never committed.
+# Local-only, deleted on task completion (ADR-0011).
+.agents/tasks/
