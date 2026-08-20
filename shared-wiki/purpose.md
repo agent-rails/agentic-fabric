@@ -6,9 +6,9 @@ Every agent reads this file alongside `index.md` so it knows what shared-wiki is
 
 ## Core purpose
 
-Shared-wiki is the **cross-cutting fact layer** read by every agent on every invocation. It holds the small set of facts that multiple agents need so each agent does not re-derive them, re-fetch them, or drift on them independently.
+Shared-wiki is the **cross-cutting convention layer** read by every agent on every invocation. It holds the small set of *principles and disciplines* that multiple agents must obey so each agent does not re-derive them or drift on them independently. In practice that is exactly four pages: `agent-principles.md`, `search-discipline.md`, `orchestration-patterns.md`, `engineering-pitfalls.md`.
 
-Without this layer, each agent's wiki would duplicate the same cross-cutting facts (who the user is, what repos exist, what the engineering principles are) and they would drift apart over time. With this layer, agents share a single source of truth for the facts that span their domains, and per-agent wikis hold only domain-specific knowledge.
+It does **not** hold user/entity facts (who the user is, who they work with, what repos or projects exist). That role is filled by the Claude Code platform's own auto-memory (`~/.claude/projects/<project>/memory/`) — a set of topic files with a `MEMORY.md` index the harness loads automatically. Those facts are owned there, not here; shared-wiki cites them by reference when a convention needs one, but never keeps its own copy, because two copies of the same entity fact drift apart. Per-agent wikis hold domain-specific knowledge.
 
 ## What belongs here
 
@@ -32,14 +32,12 @@ A fact belongs in shared-wiki if and only if:
 
 Any agent in any invocation should be able to answer these by reading shared-wiki alone, no agent-specific wiki required:
 
-- Who is the user? What role, what preferences, what autonomy model, what communication style?
-- Who are the people the user works with across agents? GitHub handles, Slack handles, primary repos, role.
-- What repos does the user work on? Primary purpose, owner team, security posture.
-- What ongoing projects / initiatives is the user driving? Status, stakeholders, deadlines.
-- What durable architectural decisions must agents respect without relitigating?
 - What principles apply to every agent's behavior? (`agent-principles.md`)
 - What search discipline applies when any agent uses Grep / Glob? (`search-discipline.md`)
 - What patterns and anti-patterns apply to multi-agent orchestration? (`orchestration-patterns.md`)
+- What recurring engineering pitfalls has this stack already paid for and codified? (`engineering-pitfalls.md`)
+
+Questions about *who* — the user, the people they work with, the repos and projects in flight, their durable architectural decisions — are **not** answered here. Those live in the platform auto-memory (`~/.claude/projects/<project>/memory/`) and are read from there. If an agent needs an entity fact, it reads auto-memory; shared-wiki does not mirror it.
 
 ## Promotion path
 
@@ -64,9 +62,9 @@ Shared-wiki bloat is the failure mode. Demotion is the relief valve.
 
 What this layer is learning over time:
 
-- **Three to nine pages is the right size.** Fewer means duplication across agent wikis; more means the "read selectively per task" discipline breaks.
-- **The most valuable pages are the principles** (`agent-principles.md`, `search-discipline.md`, `orchestration-patterns.md`) — they shape behavior across every agent invocation without needing per-agent customization.
-- **Entity pages (people, repos, projects) are the most likely to drift.** They need explicit refresh discipline; otherwise they decay into "the way things were when this was last edited."
+- **Small is the point.** The whole layer is the four principle pages. Fewer means the disciplines drift back into agent wikis; more means the "read every invocation" cost stops being worth it. Entity facts do not count against this budget — they live in platform auto-memory, not here.
+- **The value is entirely in the principles** (`agent-principles.md`, `search-discipline.md`, `orchestration-patterns.md`, `engineering-pitfalls.md`) — they shape behavior across every agent invocation without needing per-agent customization. That is why this layer earns a read on every invocation despite being small.
+- **Entity drift is auto-memory's problem, not this layer's.** People/repos/projects decay into "the way things were when last edited" — but that decay is managed in `~/.claude/projects/<project>/memory/` (via `/memory-lint`), not here, precisely because those facts were never copied into shared-wiki.
 - **The promotion gate is load-bearing.** Every time it has been relaxed historically, shared-wiki has grown faster than it improved review or triage quality.
 
 ## Read order for any agent

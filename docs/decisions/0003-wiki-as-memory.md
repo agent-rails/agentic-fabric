@@ -30,3 +30,12 @@ Memory writes are done by cheap sonnet scribes, not the opus lead — the lead k
 - **Memory rots — this is the main cost.** Entity pages drift into "the way things were when last edited"; pending items go stale within ~14 days. Mitigations are load-bearing, not optional: the auto-stale rule, the `/wiki-lint` and `/memory-lint` skills, and the promotion/demotion discipline for shared-wiki.
 - **shared-wiki bloat is the failure mode.** The relief valve is a hard rule: scribes never write to shared-wiki; promotion is an explicit human decision. Every historical relaxation of that gate grew shared-wiki faster than it improved output. Demotion moves single-agent facts back down.
 - The gate pages (review rubric, shared-wiki) are protected from agent self-editing by a hook — see [ADR-0004](0004-hooks-over-prompts.md). An agent graded by a rubric must not be able to weaken the rubric.
+
+## Addendum (charter correction)
+
+The original decision above lists shared-wiki as holding "user identity, people, repos, projects, and the principle pages." Reality diverged, and this addendum corrects the charter rather than rewriting the decision:
+
+- **shared-wiki holds only principle / discipline pages** — `agent-principles.md`, `search-discipline.md`, `orchestration-patterns.md`, `engineering-pitfalls.md`. These are the cross-cutting *conventions* every agent obeys. That is the whole of its real, in-use content.
+- **The user / entity role (people, repos, projects, user identity) is filled by the Claude Code platform's own auto-memory** (`~/.claude/projects/<project>/memory/`), verified real and in daily use — a set of topic files with a `MEMORY.md` index that the harness loads automatically. It was never built into shared-wiki, and it should not be: duplicating it there would create two drifting copies of the same entity facts. shared-wiki cites those facts by reference when a convention needs them; it does not own them.
+
+**Why not a third memory system (`memkit`).** A candidate library (`memkit`, conflict-resolution machinery for concurrent multi-writer memory) was evaluated and deferred — not because "there are no concurrent writers yet" (a reopenable capacity argument), but because it **conflicts with this ADR's deliberate choice**: git-backed, diffable, human-inspectable, PR-reviewable markdown. A separate durable store with its own merge layer reintroduces exactly the opaque-query-layer property Option 2 was rejected for. Verified: zero real imports of it exist anywhere in this stack. The deferral is a design boundary, not a backlog item.
