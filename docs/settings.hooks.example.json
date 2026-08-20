@@ -46,6 +46,11 @@
           },
           {
             "type": "command",
+            "command": "/Users/youruser/.claude/scripts/gh-pr-merge-gate.sh",
+            "timeout": 10
+          },
+          {
+            "type": "command",
             "command": "/Users/youruser/.claude/scripts/enforce-branch-prefix.sh",
             "timeout": 10
           }

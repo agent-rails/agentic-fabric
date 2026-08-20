@@ -117,7 +117,8 @@ After restarting Claude Code:
 - **Skills load** — open the slash-command menu (`/`) and confirm `/triage`, `/review-pr`, `/self-review` appear. `/help` lists available commands.
 - **Agents load** — the agent names in `agents/` (your-triage-agent, your-pr-reviewer, ...) resolve when referenced.
 - **Hooks fire** — the branch-prefix gate is the easiest check: ask the agent to create a branch that does *not* start with your alias (e.g. `git checkout -b test-branch`). The hook should block it with a message telling you to use your `<alias>/` prefix. A `<alias>/...` branch should succeed.
-- **PR gate** — asking the agent to run `gh pr create` without `--draft` should be denied with a "Review-first PR workflow required" message.
+- **PR create gate** — asking the agent to run `gh pr create` without `--draft` should be denied with a "Review-first PR workflow required" message.
+- **PR merge gate** — asking the agent to run `gh pr merge` against a PR that is still a draft should be denied with the same "Review-first" message (mark it ready with `gh pr ready` after review first). Against an already-ready PR, the gate stays silent.
 
 If a hook doesn't fire, re-check the paths in `~/.claude/settings.json` (step 5) and that the scripts are executable (`chmod +x`).
 
