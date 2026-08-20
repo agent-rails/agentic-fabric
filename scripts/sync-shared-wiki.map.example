@@ -1,0 +1,20 @@
+# sync-shared-wiki substitution map (EXAMPLE — replace the right-hand values).
+#
+# Copy this file to ~/.claude/shared-wiki/.sync-map and set each right-hand
+# value to the real agent name you deploy. Keep it OUTSIDE the repo: real
+# names are never committed, which is the whole reason the canonical pages
+# ship with placeholders.
+#
+# Format: <placeholder>=<real-deployed-name>   (one per line; # starts a comment)
+# Order does not matter — the sync applies longest placeholder first.
+
+your-pr-reviewer=my-reviewer
+your-pr-review-fetcher=my-review-fetcher
+your-pr-review-scribe=my-review-scribe
+your-cross-vendor-reviewer=my-second-vendor-reviewer
+your-same-vendor-reviewer=my-same-vendor-reviewer
+your-patch-drafter=my-patch-drafter
+your-triage-agent=my-triage
+your-triage-fetcher=my-triage-fetcher
+your-triage-reporter=my-triage-reporter
+your-triage-scribe=my-triage-scribe

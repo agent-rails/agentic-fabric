@@ -12,7 +12,7 @@ Built and dogfooded daily over months of real DevOps/SRE work. Sanitized for por
 | `agents/your-triage-reporter/` | launchd-driven daily/weekly report automation: `run.sh` (21:00 cron), `catchup.sh` (4h backfill), `session-drain-check.sh` (SessionStart hook that delivers queued reports when an interactive session can reach Slack — headless runs can't reach OAuth connectors). |
 | `skills/` | Slash-command workflows: `/triage`, `/daily-report`, `/weekly-report`, `/standup`, `/review-pr`, `/draft-pr-fixes`, `/self-review`, `/pr-sizer`, `/workflow-miner`, `/memory-lint`, `/wiki-lint`, `/ci-investigation`, session management, delegation patterns, and more. `/workflow-miner` also mines tool-call frequency from Claude Code's own session logs (name+timestamp only, never content) as a lightweight efficiency signal, alongside its recurring-task-pattern ladder. |
 | `commands/` | Older-style command prompts (PR summary, design doc, prompt-writing guide, standup). |
-| `scripts/` | PreToolUse hooks: branch-prefix enforcement (`youralias/` gate), PR-create gate, wiki gate-page protection, skill scanner, pre-write malicious-content scan. |
+| `scripts/` | PreToolUse hooks: branch-prefix enforcement (`youralias/` gate), PR-create gate, wiki gate-page protection, skill scanner, pre-write malicious-content scan. Plus `sync-shared-wiki.sh` — pushes canonical shared-wiki pages to your deployed copy with placeholder→real-name substitution. |
 | `policies/` | Declarative policy for the pre-write content scan (`write-content-scan.yaml`), evaluated by [agent-guard](https://github.com/agent-rails/agent-guard) — a separate, real, deterministic tool-call-authorization library, not part of this bundle. |
 | `rules/` | Global rules files (general, git, planning, prompting, python, typescript, testing). |
 | `shared-wiki/` | Cross-agent convention pages: agent principles, search discipline, orchestration patterns (incl. the persona-to-pattern mapping). |
@@ -94,6 +94,21 @@ Replace in your `~/.claude` copy before use. The grep in step 3 finds all of the
 | `you@example.com` | rules, examples | Optional — cosmetic unless a workflow depends on it. |
 | `YOUR_SLACK_USER_ID` / `user_slack.md` | Slack triage + report delivery | **Required if** you use Slack (`/triage`, `/daily-report`); otherwise skip. |
 | `your-pretool-hook`, `your-stop-guard` | `settings.hooks.example.json` | Optional — your own custom hooks; remove the entries if unused. |
+
+## Keeping shared-wiki in sync
+
+The `shared-wiki/` pages in this repo are canonical and ship with placeholder agent names. Your deployed copy at `~/.claude/shared-wiki/` uses your real names. `scripts/sync-shared-wiki.sh` bridges the two — it copies each canonical page to the deployed copy, substituting placeholders for real names on the way, so you never hand-edit the deployed copy and never commit real names back.
+
+```bash
+# One-time: create your substitution map OUTSIDE the repo (real names never get committed)
+cp scripts/sync-shared-wiki.map.example ~/.claude/shared-wiki/.sync-map
+# edit ~/.claude/shared-wiki/.sync-map — set each value to the real name you deploy
+
+# Then, whenever the canonical pages change:
+bash scripts/sync-shared-wiki.sh
+```
+
+It fails loud if a placeholder can't be fully substituted, and it refuses to clobber a deployed page you've hand-edited since the last sync (checksum mismatch → warn + skip) — so a manual change is never silently overwritten. Running it twice is a no-op. Tests: `bash scripts/sync-shared-wiki.test.sh`.
 
 ## Verify your install
 
