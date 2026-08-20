@@ -14,6 +14,9 @@ Format is lightweight [MADR](https://adr.github.io/madr/)-style. These are recon
 | [0006](0006-outbound-human-gate.md) | Outbound actions (send/merge/push) are always human-gated | Accepted |
 | [0007](0007-llm-judge-autonomous-loops.md) | LLM judge may close reversible loops; never opens the outbound gate | Proposed |
 | [0008](0008-same-vendor-fallback.md) | Same-vendor fallback reviewer when the cross-vendor CLI is unavailable, always labeled distinctly | Accepted |
+| [0009](0009-recovery-mechanism-scope.md) | Transcript-resume is the canonical recovery mechanism | Accepted |
+| [0010](0010-orchestrator-depth-gate.md) | Orchestrator depth is prompt-enforced, not platform-mechanized | Accepted |
+| [0011](0011-continuation-record.md) | Structured continuation record for in-flight task resume | Accepted |
 
 ## Writing a new ADR
 
