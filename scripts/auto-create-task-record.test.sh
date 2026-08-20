@@ -22,7 +22,7 @@ constraints_json() { python3 -c 'import json,sys; print(json.dumps(json.load(ope
 
 # 1. agentId + HARD CONSTRAINTS section -> record with constraints populated.
 rm -rf "$AGENT_TASKS_DIR"
-printf '%s' '{"tool_input":{"prompt":"Do the thing.\n\nHARD CONSTRAINTS:\n- do not touch live config\n- stop before the PR\n\nOther text."},"tool_response":{"status":"async_launched","agentId":"aaa111"}}' | bash "$HOOK"
+printf '%s' '{"tool_input":{"run_in_background":true,"prompt":"Do the thing.\n\nHARD CONSTRAINTS:\n- do not touch live config\n- stop before the PR\n\nOther text."},"tool_response":{"status":"async_launched","agentId":"aaa111"}}' | bash "$HOOK"
 rec="$AGENT_TASKS_DIR/aaa111.json"
 [ -f "$rec" ] || fail "record not created for aaa111"
 [ "$(field "$rec" agent_id)" = "aaa111" ] || fail "agent_id wrong"
@@ -32,7 +32,7 @@ ok "creates record with parsed HARD CONSTRAINTS (background dispatch)"
 
 # 2. no HARD CONSTRAINTS section -> constraints: []
 rm -rf "$AGENT_TASKS_DIR"
-printf '%s' '{"tool_input":{"prompt":"Just do it, no constraints stated."},"tool_response":{"status":"completed","agentId":"bbb222"}}' | bash "$HOOK"
+printf '%s' '{"tool_input":{"run_in_background":true,"prompt":"Just do it, no constraints stated."},"tool_response":{"status":"completed","agentId":"bbb222"}}' | bash "$HOOK"
 rec="$AGENT_TASKS_DIR/bbb222.json"
 [ -f "$rec" ] || fail "record not created for bbb222"
 [ "$(constraints_json "$rec")" = '[]' ] || fail "expected empty constraints, got $(constraints_json "$rec")"
@@ -41,7 +41,7 @@ ok "empty constraints when no HARD CONSTRAINTS section"
 # 3. no agentId in tool_response -> no record, exit 0 (fail open, don't crash)
 rm -rf "$AGENT_TASKS_DIR"
 set +e
-printf '%s' '{"tool_input":{"prompt":"x"},"tool_response":{"status":"completed"}}' | bash "$HOOK"
+printf '%s' '{"tool_input":{"run_in_background":true,"prompt":"x"},"tool_response":{"status":"completed"}}' | bash "$HOOK"
 rc=$?
 set -e
 [ "$rc" -eq 0 ] || fail "expected exit 0 on missing agentId, got $rc"
@@ -53,7 +53,7 @@ rm -rf "$AGENT_TASKS_DIR"
 mkdir -p "$AGENT_TASKS_DIR"
 printf '%s' '{"preexisting":true}' > "$AGENT_TASKS_DIR/ccc333.json"
 set +e
-printf '%s' '{"tool_input":{"prompt":"new goal\n\nHARD CONSTRAINTS:\n- x"},"tool_response":{"status":"completed","agentId":"ccc333"}}' | bash "$HOOK"
+printf '%s' '{"tool_input":{"run_in_background":true,"prompt":"new goal\n\nHARD CONSTRAINTS:\n- x"},"tool_response":{"status":"completed","agentId":"ccc333"}}' | bash "$HOOK"
 rc=$?
 set -e
 [ "$rc" -eq 0 ] || fail "expected exit 0 when record exists, got $rc"
@@ -63,9 +63,21 @@ ok "existing record not overwritten, exits 0"
 # 5. inline constraint on the marker line, plus a following bullet, plus a next
 #    section marker that must terminate the list.
 rm -rf "$AGENT_TASKS_DIR"
-printf '%s' '{"tool_input":{"prompt":"Task.\nHARD CONSTRAINTS: never delete prod\n- also never force-push\nDELIVERABLES:\n- a report"},"tool_response":{"status":"completed","agentId":"ddd444"}}' | bash "$HOOK"
+printf '%s' '{"tool_input":{"run_in_background":true,"prompt":"Task.\nHARD CONSTRAINTS: never delete prod\n- also never force-push\nDELIVERABLES:\n- a report"},"tool_response":{"status":"completed","agentId":"ddd444"}}' | bash "$HOOK"
 rec="$AGENT_TASKS_DIR/ddd444.json"
 [ "$(constraints_json "$rec")" = '["never delete prod", "also never force-push"]' ] || fail "inline+bullet+terminator parse wrong: $(constraints_json "$rec")"
 ok "parses inline constraint and terminates at next section marker"
+
+# 6. foreground dispatch (run_in_background false/absent) -> skipped entirely,
+#    no record, no warning -- this is the common case, not a failure.
+rm -rf "$AGENT_TASKS_DIR"
+printf '%s' '{"tool_input":{"run_in_background":false,"prompt":"HARD CONSTRAINTS:\n- x"},"tool_response":{"status":"completed","agentId":"eee555"}}' | bash "$HOOK"
+[ -z "$(ls -A "$AGENT_TASKS_DIR" 2>/dev/null || true)" ] || fail "foreground dispatch should not create a record"
+ok "foreground dispatch (run_in_background=false) skipped, no record"
+
+rm -rf "$AGENT_TASKS_DIR"
+printf '%s' '{"tool_input":{"prompt":"HARD CONSTRAINTS:\n- x"},"tool_response":{"status":"completed","agentId":"fff666"}}' | bash "$HOOK"
+[ -z "$(ls -A "$AGENT_TASKS_DIR" 2>/dev/null || true)" ] || fail "missing run_in_background field should default to skip"
+ok "missing run_in_background field defaults to skip"
 
 echo "all $pass tests passed"

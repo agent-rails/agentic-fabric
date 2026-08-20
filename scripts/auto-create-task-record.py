@@ -12,8 +12,15 @@ Creation is mechanized here, not a remembered manual step (ADR-0004 / Principle
 2). This hook cannot block a dispatch and must never crash one: every failure
 case logs a warning and exits 0 (fail open).
 
+Only fires for background dispatches (`tool_input.run_in_background == true`).
+A foreground `Agent` call blocks until it returns and is never `SendMessage`-
+resumed, so creating a record for it is pure overhead with no matching resume
+path to protect -- it would only produce empty-constraints records that could
+spuriously deny a resume nobody would ever attempt.
+
 Failure cases:
-  - no agentId in tool_response  -> log warning, write nothing, exit 0
+  - not a background dispatch     -> skip silently, exit 0 (not a failure, the common case)
+  - no agentId in tool_response   -> log warning, write nothing, exit 0
   - record already exists         -> do not overwrite, log warning, exit 0
 """
 import json
@@ -87,6 +94,10 @@ def main() -> None:
         warn("could not parse stdin JSON")
         sys.exit(0)
 
+    tool_input = data.get("tool_input") or {}
+    if not tool_input.get("run_in_background"):
+        sys.exit(0)
+
     tool_response = data.get("tool_response")
     if not isinstance(tool_response, dict):
         warn("no tool_response object; nothing to key on")
@@ -97,7 +108,6 @@ def main() -> None:
         warn("no agentId in tool_response; cannot create a record")
         sys.exit(0)
 
-    tool_input = data.get("tool_input") or {}
     prompt = tool_input.get("prompt") or ""
 
     record_path = tasks_dir() / f"{agent_id}.json"
