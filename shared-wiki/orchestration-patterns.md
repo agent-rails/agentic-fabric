@@ -115,6 +115,42 @@ main agent → research sub-agent (reads 50 files) → digest → main agent con
 
 ---
 
+### 6. Asynchronous background fan-out
+
+Several *unrelated* builds or investigations, each in its own repo, dispatched as independent background Agent-tool calls and left to run concurrently. Unlike Pattern 3, there is **no synthesizer and no merge step** — the tasks share no input and produce no combined verdict. The operator monitors them, resumes any that stall, and takes each result on its own. This is the shape the user-as-orchestrator actually runs at scale: many separate work items in flight, not one problem fanned across peers.
+
+```
+operator ─┬─→ background task A (repo A)  ──→ result A  (taken on its own)
+          ├─→ background task B (repo B)  ──→ result B  (taken on its own)
+          ├─→ background task C (repo C)  ──→ (stalls) ─┐
+          └─→ background task D (repo D)  ──→ result D   │
+                                                         └─ operator resumes C
+                                                            via SendMessage-from-transcript
+```
+
+**Use when:**
+- The tasks are genuinely independent — different repos, no shared state, no ordering dependency, and crucially **no combined output**. If the results need merging, that is Pattern 3, not this.
+- Each task is large enough that running it inline would block the operator on one thing at a time.
+- The operator can hold the set in mind (or in a notes list) and re-dispatch a dropped one — there is no runner tracking them.
+
+**Examples in this stack** (all run this way, concurrently, across different repos, with no synthesis step between them):
+- `agent-warrant` `did:web` + revocation build
+- the SME `event_space` vertical build
+- the homelab OpenClaw narration-bug investigation
+- the OpenClaw ↔ `agent-guard` integration build
+- the upstream `openclaw/openclaw` tool-call-repair fix pipeline
+- the `agent-witness` build and its subsequent fix pass
+
+Each was a separate background Agent-tool call in its own repo; none fed a merge step; several were resumed after a stall or session-limit via `SendMessage`-from-transcript (the canonical recovery — see ADR-0009).
+
+**Cost:** N independent sub-agent contexts running concurrently — the highest raw token spend of any pattern here, because it is N whole tasks, not N views of one task. It buys wall-clock throughput (many builds progress at once) and nothing else; there is no synthesis dividend. Only reach for it when the work items are truly separate and the operator actually has that many independent things to move.
+
+**Why not an existing pattern:** Pattern 3 requires a synthesizer and a single merged verdict — these tasks have neither. Pattern 4 is a *sequential* pipeline with dependencies between steps — these have no ordering. Pattern 5 returns a digest into a main context that continues — here nothing continues centrally; each result stands alone. The gap Pattern 6 fills is genuinely uncovered by 3, 4, and 5.
+
+**Anti-pattern shadow — resume-safety is unmechanized.** The dangerous mistake is to treat this pattern as if a runner were tracking the fleet. It is not. There is no task table, no lineage, no automatic re-dispatch, and — verified against the Claude Code hook docs — no platform signal for background-task depth or lineage to build one against (see ADR-0008). **Resume-safety rests entirely on operator discipline:** before resuming any stalled task the operator must verify its real state (git status, remote, filesystem) rather than trust the transcript's assumptions, and a dropped task is only recoverable if a human remembers it existed. Do not present this pattern as if that safety were a mechanized check. If the fleet grows past what one operator can hold in mind, the honest next step is a thin non-LLM task runner to track state — not more concurrency on top of memory alone.
+
+---
+
 ## Claude Code compatibility
 
 ### Subagents vs. Agent Teams
