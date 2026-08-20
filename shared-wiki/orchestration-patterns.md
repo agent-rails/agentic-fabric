@@ -312,6 +312,15 @@ Pattern 3 (parallel fan-out + synthesizer) only works if every peer is frontier-
 
 **Audit (2026-05-08):** Every your-pr-reviewer cascade peer (`architect-review`, `ai-architect`, `your-cross-vendor-reviewer`) is on opus. Synthesizer (`your-pr-reviewer`) on opus. Gate satisfied. Re-audit when adding any cascade peer.
 
+**Audit (2026-08-20):** Cross-checked every live agent's `model:` frontmatter against `model-router`'s `SUBAGENT_CATEGORY` mapping (category → tier → model). The load-bearing property holds: every cascade peer (`architect-review`, `ai-architect`, `your-cross-vendor-reviewer`, and now `your-same-vendor-reviewer`) is opus, the synthesizer is opus, and the router's own `security_review` override — which pins the review peers to the top tier — agrees with frontmatter. Gate satisfied. The mechanical roles also agree cleanly: fetchers haiku (`extraction`), scribes/reporter sonnet (`summarization`), `your-patch-drafter` opus (`coding_complex`).
+
+Six roles diverge from the router's generic category, and **each divergence is deliberate and already documented here, not a mistake** — no frontmatter was changed:
+- `implementer` (sonnet) and `senior-qa` (sonnet) sit below the router's `coding_complex`/`code_review` → opus, exactly as the Pattern 4 bullet above permits (edit-only / black-box, promote only on recurring failures).
+- `tester` (opus) and `context-manager` (opus) sit above the router's `coding_simple`/`summarization` → sonnet — deliberate: gnarly test-failure root-causing and multi-agent state coordination are judgment, not the generic category the router assigns.
+- `your-triage-agent` (opus) sits above the router's `chat` → sonnet — it is a judgment lead (classify + draft from relationship context), so Principle 1 (judgment on opus) governs, not the cost-routing default.
+
+The router's category is a cost-routing default for API dispatch; the frontmatter encodes this stack's peer-gate and judgment-placement rationale, and is authoritative where they differ. One item worth flagging: the router categorizes `debugger` as `debugging_hard` → opus, which independently corroborates the watch-note below — kept sonnet pending the evidence-first promotion rule, not flipped on speculation. `principal-architect` is not in the router example's map (uncovered, not a mismatch).
+
 **Watch list:**
 - `debugger` is sonnet. Debugging often benefits from frontier reasoning; promote to opus if recurring symptom-vs-cause regressions appear.
 - Adding any new opus-cascade peer must come with an explicit model-tier justification in this appendix.
