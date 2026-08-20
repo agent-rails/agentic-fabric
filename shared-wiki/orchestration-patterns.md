@@ -129,14 +129,14 @@ Claude Code has two parallelism primitives. Pattern 3 (parallel fan-out with syn
 | Status | Stable | Experimental — requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` |
 | Cost | Lower | Higher — each teammate is a separate Claude instance |
 
-### Platform-enforced rules
+### Depth constraints (prompt-enforced, not platform-enforced)
 
-Two rules in this catalog aren't just convention — Claude Code enforces them:
+Two rules in this catalog were previously documented as guaranteed by the harness. That was wrong — verify claims against behavior, not assumption:
 
-- **"Subagents cannot spawn other subagents."** Anti-pattern B (persona-calls-persona) and Anti-pattern D (deep persona trees) cannot exist on Claude Code by construction.
-- **"No nested teams"** — teammates cannot spawn their own teams.
+- **"Subagents cannot spawn other subagents."** Empirically false: nested subagent spawning has been observed directly. Anti-pattern B (persona-calls-persona) and Anti-pattern D (deep persona trees) are held off by convention, review, and this catalog — not by the platform refusing to load them.
+- **"No nested teams."** Same status — a prompt-level convention, not a construction-time guarantee.
 
-This means contributors cannot accidentally build the anti-patterns. They'll just fail to load.
+Contributors *can* accidentally build these anti-patterns; nothing in the harness stops them. The depth-1 boundary and its one orchestrator exception rest on prompt discipline. See ADR-0008 for why this gap is documented as accepted rather than mechanized — no platform signal for subagent nesting depth or lineage exists to hook against.
 
 ### Spawning multiple subagents in parallel
 
