@@ -147,7 +147,7 @@ Each was a separate background Agent-tool call in its own repo; none fed a merge
 
 **Why not an existing pattern:** Pattern 3 requires a synthesizer and a single merged verdict — these tasks have neither. Pattern 4 is a *sequential* pipeline with dependencies between steps — these have no ordering. Pattern 5 returns a digest into a main context that continues — here nothing continues centrally; each result stands alone. The gap Pattern 6 fills is genuinely uncovered by 3, 4, and 5.
 
-**Anti-pattern shadow — resume-safety is unmechanized.** The dangerous mistake is to treat this pattern as if a runner were tracking the fleet. It is not. There is no task table, no lineage, no automatic re-dispatch, and — verified against the Claude Code hook docs — no platform signal for background-task depth or lineage to build one against (see ADR-0008). **Resume-safety rests entirely on operator discipline:** before resuming any stalled task the operator must verify its real state (git status, remote, filesystem) rather than trust the transcript's assumptions, and a dropped task is only recoverable if a human remembers it existed. Do not present this pattern as if that safety were a mechanized check. If the fleet grows past what one operator can hold in mind, the honest next step is a thin non-LLM task runner to track state — not more concurrency on top of memory alone.
+**Anti-pattern shadow — resume-safety is unmechanized.** The dangerous mistake is to treat this pattern as if a runner were tracking the fleet. It is not. There is no task table, no lineage, no automatic re-dispatch, and — verified against the Claude Code hook docs — no platform signal for background-task depth or lineage to build one against (see ADR-0010). **Resume-safety rests entirely on operator discipline:** before resuming any stalled task the operator must verify its real state (git status, remote, filesystem) rather than trust the transcript's assumptions, and a dropped task is only recoverable if a human remembers it existed. Do not present this pattern as if that safety were a mechanized check. If the fleet grows past what one operator can hold in mind, the honest next step is a thin non-LLM task runner to track state — not more concurrency on top of memory alone.
 
 ---
 
@@ -172,7 +172,7 @@ Two rules in this catalog were previously documented as guaranteed by the harnes
 - **"Subagents cannot spawn other subagents."** Empirically false: nested subagent spawning has been observed directly. Anti-pattern B (persona-calls-persona) and Anti-pattern D (deep persona trees) are held off by convention, review, and this catalog — not by the platform refusing to load them.
 - **"No nested teams."** Same status — a prompt-level convention, not a construction-time guarantee.
 
-Contributors *can* accidentally build these anti-patterns; nothing in the harness stops them. The depth-1 boundary and its one orchestrator exception rest on prompt discipline. See ADR-0008 for why this gap is documented as accepted rather than mechanized — no platform signal for subagent nesting depth or lineage exists to hook against.
+Contributors *can* accidentally build these anti-patterns; nothing in the harness stops them. The depth-1 boundary and its one orchestrator exception rest on prompt discipline. See ADR-0010 for why this gap is documented as accepted rather than mechanized — no platform signal for subagent nesting depth or lineage exists to hook against.
 
 ### Spawning multiple subagents in parallel
 

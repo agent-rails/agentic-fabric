@@ -1,4 +1,4 @@
-# ADR-0008 — Orchestrator depth is prompt-enforced, not platform-mechanized
+# ADR-0010 — Orchestrator depth is prompt-enforced, not platform-mechanized
 
 Status: Accepted · Applies principle: [The user is the orchestrator](../DESIGN-PRINCIPLES.md#4-the-user-is-the-orchestrator)
 

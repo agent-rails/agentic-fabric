@@ -25,6 +25,6 @@ Option 2. **`SendMessage`-resume-from-transcript is the canonical recovery mecha
 ## Consequences
 
 - One named recovery path for the failure that dominates in practice, instead of two un-owned adjacent mechanisms. When a Claude task hits its limit, the answer is "resume it from transcript," full stop.
-- **Resume-safety rests on operator discipline, not a mechanized check.** Resuming from a transcript re-enters work that may have partially completed; the operator must verify real state (git, remote, filesystem) before acting on a resumed instance's assumptions. This is an accepted gap, called out honestly rather than papered over — the same posture [ADR-0008](0008-orchestrator-depth-gate.md) takes on the depth constraint.
+- **Resume-safety rests on operator discipline, not a mechanized check.** Resuming from a transcript re-enters work that may have partially completed; the operator must verify real state (git, remote, filesystem) before acting on a resumed instance's assumptions. This is an accepted gap, called out honestly rather than papered over — the same posture [ADR-0010](0010-orchestrator-depth-gate.md) takes on the depth constraint.
 - The second-vendor-CLI → local-model leg keeps a real, tested last-resort path for spawned work, without pretending it is the recovery story for interactive Claude limits.
 - If a Claude-invocable-as-callable primitive ever ships, this decision is worth revisiting — the vendor-swap leg becomes reconsiderable only when it can preserve context, which today it cannot.

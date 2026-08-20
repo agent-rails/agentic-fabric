@@ -36,7 +36,7 @@ Sessions are stateless; the wiki is not. Every session reads relevant pages befo
 Personas produce one perspective and hand back. They do not call each other, except as parallel peers feeding a single synthesizer (Pattern 3). Composition happens through slash commands the user runs in sequence, with human judgment between steps.
 
 - Why not an LLM "lifecycle orchestrator": it loses nuance at every hand-off (summarize-to-pass), skips the human checkpoints that catch wrong-direction work early, and roughly doubles token cost via paraphrasing turns.
-- This is a prompt-level constraint, not a platform guarantee: subagents *can* spawn subagents (observed directly), so the router-persona / deep-tree anti-patterns are held off by convention and review, not by the harness. The depth-1 boundary is right; the belief that Claude Code enforced it "by construction" was wrong. See [ADR-0002](decisions/0002-user-is-orchestrator.md) and [ADR-0008](decisions/0008-orchestrator-depth-gate.md).
+- This is a prompt-level constraint, not a platform guarantee: subagents *can* spawn subagents (observed directly), so the router-persona / deep-tree anti-patterns are held off by convention and review, not by the harness. The depth-1 boundary is right; the belief that Claude Code enforced it "by construction" was wrong. See [ADR-0002](decisions/0002-user-is-orchestrator.md) and [ADR-0010](decisions/0010-orchestrator-depth-gate.md).
 
 ## 5. Evidence-calibrated review severity
 
