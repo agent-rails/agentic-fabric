@@ -12,7 +12,7 @@ One genuine safety finding drove the shape below: a structured record captures *
 
 ## Schema
 
-`.agents/tasks/<agentId>.json`, keyed on the spawned `agentId` (verified available at dispatch, see the spike below), not on a human-chosen name:
+`.agents/tasks/<agentId>.json`, keyed on the spawned `agentId` (available at dispatch, see "Platform behavior this design relies on" below), not on a human-chosen name:
 
 ```json
 {
@@ -51,15 +51,13 @@ The resume-time check is a **PreToolUse hook on `SendMessage`** (`enforce-resume
 
 This is deliberately *not* "fail-loud on resume" flatly. Fail-loud fires only in the narrow window where a record exists AND its constraints are empty. Every other case is fail-open, consistent with this repo's existing hook convention ([ADR-0008 depth gate](0010-orchestrator-depth-gate.md), the branch-prefix hook — both fail open on any parse ambiguity). The block uses this repo's standard deny mechanism: a `hookSpecificOutput.permissionDecision: "deny"` JSON on stdout, exit 0.
 
-## Evidence — the live spike this design rests on
+## Platform behavior this design relies on
 
-The load-bearing assumption is that a PostToolUse hook actually *fires* on the `Agent` tool and actually *receives* `tool_response.agentId` — not merely that the field exists somewhere. That required a live spike, not a desk pass. A temporary diagnostic `PostToolUse:Agent` hook logging raw stdin was added (live config backed up first), two throwaway agents were run, and the settings were restored from backup afterward and verified byte-identical via `diff`:
+`PostToolUse` fires on the `Agent` tool for both foreground and background dispatch. `tool_response.agentId` (camelCase) is populated in both cases — including at `"status": "async_launched"` for a background dispatch, meaning the hook can create the record at true dispatch time, before the background work starts, not only once it completes.
 
-- **Foreground dispatch:** `PostToolUse` fired; `tool_response` carried `"status": "completed"` and `"agentId": "a53c2bebf2313fa4c"`.
-- **Background dispatch:** `PostToolUse` fired **immediately at dispatch**, before the background work started — `"status": "async_launched"` with `"agentId": "acf6ee6baa8099214"` already populated. Better than the design needed: the record is created at true dispatch time, not after the fact.
-- **Bonus signal:** the same `tool_response` included real cache-usage fields (`cache_creation_input_tokens`, `cache_read_input_tokens`, `ephemeral_5m_input_tokens`), confirming subagent dispatch uses prompt caching at a 5-minute ephemeral tier. Relevant evidence for whenever the deferred token-efficiency measurement gets picked up — not conclusive alone, but no longer purely speculative.
+`tool_response` also carries cache-usage fields (`cache_creation_input_tokens`, `cache_read_input_tokens`, `ephemeral_5m_input_tokens`), confirming subagent dispatch uses prompt caching at a 5-minute ephemeral tier — relevant for whenever the deferred token-efficiency measurement (see Context) gets picked up.
 
-The `agentId` key is `agentId` (camelCase) in the response and is present at both `completed` and `async_launched` status. The resume path this session used `SendMessage` targeting that same raw `agentId` 100% of the time, which is why keying on `agentId` matches real usage.
+Real usage keys on the raw `agentId`, not a human-chosen name, which is why the schema does the same.
 
 ## Non-goals
 
