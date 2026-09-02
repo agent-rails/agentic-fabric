@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agent-rails.dev/schemas/review-convergence-evidence-v1.json",
+  "title": "Review convergence evidence bundle",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "repo",
+    "pr",
+    "head_sha",
+    "cycle",
+    "security_relevant",
+    "findings",
+    "checks",
+    "reviewers",
+    "heuristic_result"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "repo": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "pr": { "type": "integer", "minimum": 1 },
+    "head_sha": { "type": "string", "pattern": "^[0-9a-f]{40,64}$" },
+    "cycle": { "type": "integer", "minimum": 2, "maximum": 3 },
+    "security_relevant": { "type": "boolean" },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "severity", "status", "evidence_type", "summary"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1, "maxLength": 100 },
+          "severity": { "enum": ["blocker", "high", "medium", "low"] },
+          "status": { "enum": ["new", "unresolved", "fixed", "human_accepted", "deferred"] },
+          "evidence_type": { "enum": ["execution_output", "source_quote", "external_doc", "unverified_hypothesis"] },
+          "summary": { "type": "string", "minLength": 1, "maxLength": 600 }
+        }
+      }
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "applicable", "ran", "exit_code"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "applicable": { "type": "boolean" },
+          "ran": { "type": "boolean" },
+          "exit_code": { "type": ["integer", "null"] }
+        }
+      }
+    },
+    "reviewers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "vendor_family", "primed", "completed"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1, "maxLength": 100 },
+          "vendor_family": { "type": "string", "minLength": 1, "maxLength": 100 },
+          "primed": { "type": "boolean" },
+          "completed": { "type": "boolean" }
+        }
+      }
+    },
+    "heuristic_result": { "enum": ["still_diverging", "converged", "not_applicable"] }
+  }
+}

@@ -1,6 +1,6 @@
 # ADR-0007 — LLM judge for self-closing loops, fenced to the reversible side
 
-Status: Proposed · Applies principles: [Evidence-calibrated severity](../DESIGN-PRINCIPLES.md#5-evidence-calibrated-review-severity), [Outbound actions are always human-gated](../DESIGN-PRINCIPLES.md#7-outbound-actions-are-always-human-gated)
+Status: Proposed · First shadow implementation: review-convergence judge · Applies principles: [Evidence-calibrated severity](../DESIGN-PRINCIPLES.md#5-evidence-calibrated-review-severity), [Outbound actions are always human-gated](../DESIGN-PRINCIPLES.md#7-outbound-actions-are-always-human-gated)
 
 ## Context
 
@@ -35,3 +35,22 @@ Adopt Option 3. An LLM judge MAY be introduced, subject to four hard constraints
   - **Ground-truth drift** — no anchor, judge slowly redefines "good." Mitigated by periodic human calibration against sampled verdicts.
 - The outbound gate is untouched. This ADR expands autonomy *behind* the gate and explicitly refuses to move the gate. That refusal is the point — it's what keeps the aggressive automation elsewhere safe to trust.
 - Status stays **Proposed** until a first judge ships against one concrete reversible loop (candidate: review-cascade convergence, replacing the finding-velocity heuristic). Promote to Accepted only after that loop demonstrates the four constraints hold in practice, with logged verdicts to show it.
+
+## Shadow implementation
+
+The first implementation is intentionally non-authoritative:
+
+- `evals/review-convergence/rubric.md` defines the immutable, domain-specific
+  rubric; `verdict.schema.json` defines its machine-readable result.
+- `agents/your-review-convergence-judge.md` produces an advisory verdict from a
+  normalized evidence bundle. Security-relevant use requires an unprimed second
+  model family.
+- `scripts/validate-judge-verdict.sh` normalizes malformed, contradictory, or
+  unknown output to `human_review` with confidence `0`.
+- During shadow mode, the result is logged beside the existing finding-velocity
+  heuristic and eventual human decision. It does not stop a cycle or change a
+  PR verdict.
+
+ADR status remains Proposed until sampled human calibration establishes an
+acceptable false-convergence rate and a separate decision explicitly enables
+the judge to stop reversible review iteration.

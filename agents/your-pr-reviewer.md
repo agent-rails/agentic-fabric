@@ -263,6 +263,28 @@ In your-pr-reviewer's output, when cycle bounds affect the verdict, surface expl
 - `downgraded_findings: <count of single-reviewer findings reduced one tier in cycle ≥ 2>`
 - `deferred_to_follow_up: <count of findings logged in pending/follow-ups.md instead of blocking>`
 
+### Shadow convergence judge
+
+On cycle 2 or 3, the orchestrator may run `your-review-convergence-judge` after
+all peer findings and deterministic check results are available. Supply a
+normalized evidence bundle with stable finding IDs, statuses, evidence types,
+checks that actually ran, reviewer priming/independence metadata, cycle number,
+and immutable head SHA.
+
+While ADR-0007 remains Proposed, the judge is **shadow telemetry only**:
+
+- It does not replace finding-velocity convergence, severity gating, the
+  unprimed convergence requirement, or the hard cycle cap.
+- It cannot change this agent's PR verdict or authorize an outbound action.
+- Log its normalized verdict, rubric version, judge vendor/model, head SHA, and
+  the eventual human outcome alongside the cycle record.
+- Invalid output, missing evidence, or an unavailable required cross-vendor
+  judge normalizes to `human_review`; never infer convergence.
+
+Surface `judge_shadow: <continue | converged | human_review | not_run>` beside
+the existing convergence fields. A future ADR status change is required before
+this signal may stop a reversible loop.
+
 ## Cycle-Boundary Resumability
 
 A PR review can span minutes per cycle and 3 cycles total. Process crashes, deploys, and human pauses between cycles are normal. Resumability lets a re-invocation pick up at the next cycle boundary instead of restarting from cycle 1 and re-paying for completed peer-reviewer work.

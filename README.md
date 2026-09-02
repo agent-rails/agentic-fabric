@@ -8,7 +8,8 @@ Built and dogfooded daily over months of real DevOps/SRE work. Sanitized for por
 
 | Dir | Contents |
 |-----|----------|
-| `agents/` | Agent definitions. Two families plus build/QA roles: **your-triage-agent** (chief-of-staff: multi-channel triage, tiered classification + routing verdicts, draft replies, wiki memory) with fetcher/scribe/reporter subagents; **your-pr-reviewer** (PR review synthesizer: evidence-calibrated severity, review-cycle convergence bounds, wiki-backed repo/author memory) with fetcher/scribe, **your-cross-vendor-reviewer** (cross-vendor reviewer via a second model family) and **your-patch-drafter** (cross-vendor patch drafter). **your-same-vendor-reviewer** is the automatic fallback for your-cross-vendor-reviewer when no second-vendor CLI is reachable — a fresh, unprimed, same-model adversarial pass, explicitly self-labeled `cross_vendor: false` so it's never mistaken for real cross-vendor signal. Plus orchestrator, researcher, implementer, tester, debugger, architect(s), senior-qa, context-manager. |
+| `agents/` | Agent definitions. Two families plus build/QA roles: **your-triage-agent** (chief-of-staff: multi-channel triage, tiered classification + routing verdicts, draft replies, wiki memory) with fetcher/scribe/reporter subagents; **your-pr-reviewer** (PR review synthesizer: evidence-calibrated severity, review-cycle convergence bounds, wiki-backed repo/author memory) with fetcher/scribe, **your-cross-vendor-reviewer** (cross-vendor reviewer via a second model family), **your-review-convergence-judge** (schema-validated shadow judge), and **your-patch-drafter** (cross-vendor patch drafter). **your-same-vendor-reviewer** is the automatic fallback for your-cross-vendor-reviewer when no second-vendor CLI is reachable — a fresh, unprimed, same-model adversarial pass, explicitly self-labeled `cross_vendor: false` so it's never mistaken for real cross-vendor signal. Plus orchestrator, researcher, implementer, tester, debugger, architect(s), senior-qa, context-manager. |
+| `evals/` | Versioned, immutable evaluation rubrics and output schemas. The first evaluator grades PR review-cycle convergence in shadow mode; it never changes a PR verdict or opens an outbound gate. |
 | `agents/your-triage-reporter/` | launchd-driven daily/weekly report automation: `run.sh` (21:00 cron), `catchup.sh` (4h backfill), `session-drain-check.sh` (SessionStart hook that delivers queued reports when an interactive session can reach Slack — headless runs can't reach OAuth connectors). |
 | `skills/` | Slash-command workflows: `/triage`, `/daily-report`, `/weekly-report`, `/standup`, `/review-pr`, `/draft-pr-fixes`, `/self-review`, `/pr-sizer`, `/workflow-miner`, `/memory-lint`, `/wiki-lint`, `/ci-investigation`, session management, delegation patterns, and more. `/workflow-miner` also mines tool-call frequency from Claude Code's own session logs (name+timestamp only, never content) as a lightweight efficiency signal, alongside its recurring-task-pattern ladder. |
 | `commands/` | Older-style command prompts (PR summary, design doc, prompt-writing guide, standup). |
@@ -62,7 +63,7 @@ Minimal path to a working triage + PR-review setup. Run from the repo root after
 
 ```bash
 # 1. Copy the agent stack into your Claude Code config
-cp -R agents skills commands scripts rules shared-wiki policies ~/.claude/
+cp -R agents skills commands scripts rules shared-wiki policies evals ~/.claude/
 chmod +x ~/.claude/scripts/*.sh ~/.claude/scripts/*.py
 
 # 2. Seed the agent wikis (machinery only; data fills itself through use)
@@ -136,6 +137,7 @@ Once installed, drive the stack through slash commands:
 | `/daily-report`, `/weekly-report` | Generate an activity report from GitHub/Slack; delivered via Slack DM. |
 | `/standup` | Daily standup summary from commits + GitHub activity. |
 | `/ci-investigation` | Investigate failing CI on a PR. |
+| `/judge-review-convergence <bundle.json>` | Shadow-score whether review iteration has converged; advisory only while ADR-0007 is Proposed. |
 | `/wiki-lint`, `/memory-lint`, `/workflow-miner` | Maintenance — health-check wikis/memory and mine recurring tasks. |
 
 ## Optional: report automation (macOS)
@@ -157,6 +159,7 @@ For the internals, the whys, and the decisions behind them, see [`docs/`](docs/)
 - Wikis as persistent memory — every session reads from and writes back to them
 - Evidence-calibrated review severity: unverified BLOCKER claims get downgraded
 - Cross-vendor cascade for reasoning diversity on security-critical paths, with a same-vendor fallback so a fresh adversarial pass still runs when no second vendor is reachable
+- LLM judging begins in shadow mode on reversible loops, with schema validation, immutable rubrics, human calibration, and no outbound authority
 - Reuse a deterministic policy engine (agent-guard) for the write-content scan rather than a second bespoke heuristics implementation — one tested engine, two call sites (tool-call authorization and pre-write content)
 - Outbound actions (sends, merges) always human-gated
 
@@ -200,12 +203,13 @@ Everything below is a placeholder to replace with your own values. The agent nam
 | `your-cross-vendor-reviewer` | Rename to your own agent name — cross-vendor (second model family) reviewer | Required-if-used |
 | `your-same-vendor-reviewer` | Rename to your own agent name — automatic same-vendor fallback when the cross-vendor reviewer is unavailable | Required-if-used |
 | `your-patch-drafter` | Rename to your own agent name — cross-vendor patch drafter | Required-if-used |
+| `your-review-convergence-judge` | Rename to your own agent name — shadow review-convergence judge | Required-if-used |
 
 Env-var and structured-block names derive from the same base names (e.g. `YOUR_TRIAGE_AGENT_NO_DRAIN`, `YOUR_CROSS_VENDOR_REVIEWER_INPUT`, `YOUR_CROSS_VENDOR_REVIEWER_REVIEW`, `YOUR_PATCH_DRAFTER_DRAFT`) — rename them to match whatever you pick.
 
 ## Install sketch
 
-1. Copy `agents/`, `skills/`, `commands/`, `scripts/`, `rules/`, `shared-wiki/` content into `~/.claude/`
+1. Copy `agents/`, `skills/`, `commands/`, `scripts/`, `rules/`, `shared-wiki/`, `policies/`, and `evals/` content into `~/.claude/`
 2. Seed `~/your-triage-agent/` and `~/your-pr-reviewer/` from `wikis/` (schema + templates; wikis fill themselves through use)
 3. Replace every placeholder (`grep -r "your-org\|youralias\|YOUR_SLACK\|you@example.com\|your-triage-\|your-pr-review\|your-cross-vendor-reviewer\|your-same-vendor-reviewer\|your-patch-drafter" .`) — see [Placeholders](#placeholders)
 4. Wire hooks per `docs/settings.hooks.example.json`; load launchd plists if you want scheduled reports

@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agent-rails.dev/schemas/review-convergence-verdict-v1.json",
+  "title": "Review convergence judge verdict",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "verdict",
+    "confidence",
+    "blocking_dimensions",
+    "evidence_refs",
+    "reason"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "verdict": { "enum": ["continue", "converged", "human_review"] },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "blocking_dimensions": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "resolution",
+          "novelty",
+          "evidence",
+          "execution",
+          "independence",
+          "expected_information_gain"
+        ]
+      }
+    },
+    "evidence_refs": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1, "maxLength": 240 }
+    },
+    "reason": { "type": "string", "minLength": 1, "maxLength": 600 }
+  }
+}

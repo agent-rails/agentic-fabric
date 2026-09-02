@@ -14,6 +14,7 @@ your-pr-review-scribe=my-review-scribe
 your-cross-vendor-reviewer=my-second-vendor-reviewer
 your-same-vendor-reviewer=my-same-vendor-reviewer
 your-patch-drafter=my-patch-drafter
+your-review-convergence-judge=my-review-convergence-judge
 your-triage-agent=my-triage
 your-triage-fetcher=my-triage-fetcher
 your-triage-reporter=my-triage-reporter
