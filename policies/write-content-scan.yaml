@@ -56,11 +56,17 @@ rules:
     arg_patterns: ["\\bexec\\s*\\("]
     reason: exec() call in written content
 
-  - id: sensitive-path-reference
+  - id: ssh-path-reference
     decision: deny
     tools: ["write"]
-    arg_patterns: ["(?i)(~/\\.ssh/|\\bcredentials\\b|\\btokens\\b|\\bsecrets\\b)"]
-    reason: reference to sensitive paths or credential material (word match, not a credential-shape detector)
+    arg_patterns: ["(?i)~/\\.ssh/"]
+    reason: reference to an SSH key path
+
+  - id: sensitive-word-mention
+    decision: allow
+    tools: ["write"]
+    arg_patterns: ["(?i)\\b(credentials?|tokens?|secrets?)\\b"]
+    reason: "logged, not blocked: word-match for credential/token/secret terminology (word match, not a credential-shape detector) -- matches the destructive-rm/dotenv-reference precedent, too noisy to hard-block generic professional/technical usage (e.g. Secrets Manager, Kubernetes secrets, admin tokens)"
 
   - id: claude-md-reference
     decision: deny
