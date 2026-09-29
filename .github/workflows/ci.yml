@@ -1,0 +1,36 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Parse every shell script
+        run: |
+          set -euo pipefail
+          for f in scripts/*.sh; do
+            bash -n "$f"
+          done
+
+      - name: Run the script test suites
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          suites=(scripts/*.test.sh)
+          if [ ${#suites[@]} -eq 0 ]; then
+            echo "::error::no scripts/*.test.sh found; this job must not pass by finding nothing to run" >&2
+            exit 1
+          fi
+          for f in "${suites[@]}"; do
+            echo "--- $f"
+            bash "$f"
+          done
