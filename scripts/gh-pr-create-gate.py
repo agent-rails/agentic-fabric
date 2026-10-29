@@ -9,6 +9,8 @@ from gh_command import Invocation, ParseError, api_fields, api_method, gh_invoca
 
 PULLS_ENDPOINT = re.compile(r"^/?repos/[^/]+/[^/]+/pulls/?$")
 
+GH_SPELLING = re.compile(r"g[\\'\"]*h")
+
 DENY_REASON = (
     "Review-first PR workflow required. Use 'gh pr create --draft ...' first, then "
     "'/review-pr <url>' against the draft, address findings (force-push if needed), "
@@ -43,7 +45,7 @@ def main() -> None:
     except json.JSONDecodeError as e:
         deny(f"Could not read the hook payload ({e}); failing closed.")
     cmd = (payload.get("tool_input") or {}).get("command") or ""
-    if not re.search(r"\bgh\b", cmd):
+    if not GH_SPELLING.search(cmd):
         return
     try:
         invocations = gh_invocations(cmd)

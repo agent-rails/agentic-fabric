@@ -8,6 +8,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from gh_command import Invocation, ParseError, api_fields, api_method, gh_invocations
 
+GH_SPELLING = re.compile(r"g[\\'\"]*h")
 MERGE_ENDPOINT = re.compile(r"^/?repos/[^/]+/[^/]+/pulls/[^/]+/merge/?$")
 VIEW_TIMEOUT_SECONDS = 8
 
@@ -67,7 +68,7 @@ def main() -> None:
     except json.JSONDecodeError as e:
         deny(f"Could not read the hook payload ({e}); failing closed.")
     cmd = (payload.get("tool_input") or {}).get("command") or ""
-    if not re.search(r"\bgh\b", cmd):
+    if not GH_SPELLING.search(cmd):
         return
     try:
         invocations = gh_invocations(cmd)
