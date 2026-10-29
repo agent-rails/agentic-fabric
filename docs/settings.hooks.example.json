@@ -69,16 +69,6 @@
     ],
     "PostToolUse": [
       {
-        "matcher": "Edit|Write|Task",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/Users/youruser/.claude/hooks/scribe-nudge-mark.sh",
-            "timeout": 5
-          }
-        ]
-      },
-      {
         "matcher": "Agent",
         "hooks": [
           {
@@ -97,11 +87,6 @@
             "type": "command",
             "command": "your-stop-guard",
             "timeout": 6
-          },
-          {
-            "type": "command",
-            "command": "/Users/youruser/.claude/hooks/scribe-nudge.sh",
-            "timeout": 5
           }
         ]
       }
