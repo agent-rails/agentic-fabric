@@ -47,13 +47,13 @@ rules:
   - id: eval-call
     decision: deny
     tools: ["write"]
-    arg_patterns: ["\\beval\\s*\\("]
+    arg_patterns: ["(^|[^.\\w])eval\\s*\\(", "\\b(window|globalThis|self)\\.eval\\s*\\("]
     reason: eval() call in written content
 
   - id: exec-call
     decision: deny
     tools: ["write"]
-    arg_patterns: ["\\bexec\\s*\\("]
+    arg_patterns: ["(^|[^.\\w])exec\\s*\\(", "\\bchild_process\\.exec(Sync|File|FileSync)?\\s*\\("]
     reason: exec() call in written content
 
   - id: ssh-path-reference
@@ -85,6 +85,12 @@ rules:
     tools: ["write"]
     arg_patterns: ["[A-Za-z0-9+/]{50,}={0,2}"]
     reason: "logged, not blocked: possible base64-encoded payload — deny is too aggressive here (lockfile integrity hashes, minified assets are common legitimate matches); scan-skill.sh's HIGH severity was calibrated for skill-file instructions specifically, a narrower and riskier context"
+
+  - id: dotted-exec-eval-call
+    decision: allow
+    tools: ["write"]
+    arg_patterns: ["\\.(exec|eval)\\s*\\("]
+    reason: "logged, not blocked: a method named exec or eval (regex exec, database cursor exec); the builtin and the known process-spawning forms are denied above"
 
   - id: destructive-git-reset
     decision: allow
