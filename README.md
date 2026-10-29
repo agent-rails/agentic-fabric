@@ -179,6 +179,16 @@ These are prompts and hooks that drive an agent with real tool access (shell, `g
 - **Keep outbound actions human-gated.** Message sends and PR merges are gated by design (see the PR-create draft gate and the `[Send]/[Edit]/[Skip]` triage flow); keep them that way.
 - **Cross-vendor CLIs run read-only.** `your-cross-vendor-reviewer`/`your-patch-drafter` wrap `codex exec --sandbox read-only` and never write files — the orchestrator applies any patch under your permission model.
 
+### What the gates catch, and what they do not
+
+These hooks stop an agent from doing the wrong thing by accident. They are not a boundary against an agent, or a prompt injection, that is deliberately working around them.
+
+- **`gh-pr-create-gate.sh` and `gh-pr-merge-gate.sh`** parse the command (quoting, operators, `bash -c`, heredocs) rather than grepping it. They cover `gh pr create`, `gh pr merge`, and the equivalent `gh api` calls, including `--repo`/`-R`. A command they cannot parse is denied, not allowed. They do not see `gh` run inside a command substitution within quotes, through `eval`, a shell variable or alias, or a script that calls `gh`, and they do not see other clients of the GitHub API such as `curl`.
+- **`scan-write-content.sh` and `protect-gate-pages.sh`** run on the `Edit`, `Write` and `NotebookEdit` tools only. The same content written through a shell redirect does not pass through them. The write scan is a pattern match, not a malware detector.
+- **`enforce-branch-prefix.sh`** enforces a naming convention and fails open by design.
+
+Each of the two PR gates has a table-driven test (`scripts/gh-pr-*-gate.test.sh`) that includes the bypasses above; add a case there when you find a new one.
+
 To report a vulnerability, see [SECURITY.md](SECURITY.md).
 ## Placeholders
 
