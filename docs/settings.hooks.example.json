@@ -27,12 +27,14 @@
           {
             "type": "command",
             "command": "/Users/youruser/.claude/scripts/protect-gate-pages.sh",
-            "timeout": 5
+            "timeout": 5,
+            "onFailure": "block"
           },
           {
             "type": "command",
             "command": "/Users/youruser/.claude/scripts/scan-write-content.sh",
-            "timeout": 5
+            "timeout": 5,
+            "onFailure": "block"
           }
         ]
       },
@@ -42,12 +44,14 @@
           {
             "type": "command",
             "command": "/Users/youruser/.claude/scripts/gh-pr-create-gate.sh",
-            "timeout": 5
+            "timeout": 5,
+            "onFailure": "block"
           },
           {
             "type": "command",
             "command": "/Users/youruser/.claude/scripts/gh-pr-merge-gate.sh",
-            "timeout": 10
+            "timeout": 10,
+            "onFailure": "block"
           },
           {
             "type": "command",

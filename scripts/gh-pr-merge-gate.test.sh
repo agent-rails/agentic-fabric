@@ -66,14 +66,43 @@ check allow true  'gh pr ready 5'
 check allow true  'echo "gh pr merge is mentioned in text"'
 check allow true  'git push origin HEAD'
 check deny  false 'gh pr merge 5 --body "unterminated'
+check deny  true  '"g"h pr merge 5'
+check deny  true  'g\h pr merge 5'
 
 : > "$GH_LOG"
 payload 'gh pr merge --repo o/r 7' | STUB_DRAFT=false bash "$HOOK" > /dev/null
 grep -q -- 'pr view 7 --repo o/r' "$GH_LOG" || fail "draft state must be read from the --repo target, got: $(cat "$GH_LOG")"
 ok "draft lookup is scoped to --repo and the PR number"
 
-out=$(printf '%s' 'not json' | bash "$HOOK")
-echo "$out" | grep -q '"permissionDecision": *"deny"' || fail "malformed payload should deny, got: $out"
-ok "malformed payload fails closed"
+out=$(printf '%s' 'not json but mentions gh' | bash "$HOOK")
+echo "$out" | grep -q '"permissionDecision": *"deny"' || fail "malformed payload that mentions gh should deny, got: $out"
+ok "deny - malformed payload fails closed"
+
+out=$(printf '%s' 'not json and nothing to guard' | bash "$HOOK")
+[ -z "$out" ] || fail "a payload that cannot spell gh should pass untouched, got: $out"
+ok "allow - payload that cannot spell gh is not inspected"
+
+CRASH=$(mktemp -d)
+trap 'rm -rf "$CRASH"' EXIT
+cp -R "$SCRIPT_DIR/." "$CRASH/"
+echo "raise RuntimeError('injected crash')" >> "$CRASH/gh_command.py"
+out=$(payload 'gh pr merge 5' | bash "$CRASH/gh-pr-merge-gate.sh")
+echo "$out" | grep -q '"permissionDecision": *"deny"' || fail "a crashing checker must deny, got: $out"
+echo "$out" | grep -q 'crashed' || fail "crash deny must say why, got: $out"
+ok "deny - checker crash fails closed"
+
+SPY=$(mktemp -d)
+printf '#!/bin/sh\necho spawned >> "%s/calls"\nexec "%s" "$@"\n' "$SPY" "$(command -v python3)" > "$SPY/python3"
+chmod +x "$SPY/python3"
+: > "$SPY/calls"
+for c in 'ls -la /tmp' 'git status' 'git push origin HEAD' 'npm test' 'cat README.md'; do
+  payload "$c" | PATH="$SPY:$PATH" bash "$HOOK" > /dev/null
+done
+[ ! -s "$SPY/calls" ] || fail "commands that cannot spell gh must not start python, got $(wc -l < "$SPY/calls") spawns"
+ok "allow - commands that cannot spell gh skip python"
+payload 'gh pr merge 5' | PATH="$SPY:$PATH" bash "$HOOK" > /dev/null
+[ "$(wc -l < "$SPY/calls" | tr -d ' ')" = 1 ] || fail "a gh command must start python once"
+ok "allow - a gh command is inspected"
+rm -rf "$SPY"
 
 echo "all $pass tests passed"
