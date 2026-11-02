@@ -11,7 +11,10 @@
 
 set -euo pipefail
 
-cmd=$(jq -r '.tool_input.command // ""')
+GATE_PAYLOAD=$(cat)
+_gate_log_lib="$(dirname "${BASH_SOURCE[0]}")/gate-decision-log.sh"
+if [ -r "$_gate_log_lib" ]; then . "$_gate_log_lib"; else log_gate_decision() { return 0; }; fi
+cmd=$(printf '%s' "$GATE_PAYLOAD" | jq -r '.tool_input.command // ""')
 
 # Strip heredoc bodies so the regex doesn't match `gh pr create` substrings
 # inside review/PR-body content. Recognises <<EOF, <<'EOF', <<"EOF", <<-EOF.
@@ -30,9 +33,13 @@ cmd_stripped=$(printf '%s\n' "$cmd" | awk '
   { print }
 ')
 
-if echo "$cmd_stripped" | grep -qE 'gh[[:space:]]+pr[[:space:]]+create' \
-  && ! echo "$cmd_stripped" | grep -qE -- '--draft'; then
-  cat <<'JSON'
+if echo "$cmd_stripped" | grep -qE 'gh[[:space:]]+pr[[:space:]]+create'; then
+  if echo "$cmd_stripped" | grep -qE -- '--draft'; then
+    log_gate_decision gh-pr-create-gate allow draft
+  else
+    cat <<'JSON'
 {"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"Review-first PR workflow required. Use 'gh pr create --draft ...' first, then '/review-pr <url>' against the draft, address findings (force-push if needed), then 'gh pr ready <number>' to mark merge-ready."}}
 JSON
+    log_gate_decision gh-pr-create-gate deny no-draft
+  fi
 fi
