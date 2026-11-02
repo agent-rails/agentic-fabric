@@ -177,7 +177,7 @@ These are prompts and hooks that drive an agent with real tool access (shell, `g
 
 - **Review before you run.** Read the agent definitions, skills, and hook scripts before copying them into `~/.claude/`.
 - **Keep outbound actions human-gated.** Message sends and PR merges are gated by design (see the PR-create draft gate and the `[Send]/[Edit]/[Skip]` triage flow); keep them that way.
-- **Cross-vendor CLIs run read-only.** `your-cross-vendor-reviewer`/`your-patch-drafter` wrap `codex exec --sandbox read-only` and never write files — the orchestrator applies any patch under your permission model.
+- **Cross-vendor CLIs are write-protected, not read-isolated.** `your-cross-vendor-reviewer`/`your-patch-drafter` wrap `codex exec --sandbox read-only` and never write files — the orchestrator applies any patch under your permission model. The sandbox does not stop reads outside the repository: with Codex CLI 0.160.0 I ran it from an empty directory and it read a file in a sibling directory. Anything the process can read, and anything it quotes in its answer, can leave the machine. Run the cascade only on code you are willing to send to the second vendor, and keep secrets out of reach of that account.
 
 To report a vulnerability, see [SECURITY.md](SECURITY.md).
 ## Placeholders
