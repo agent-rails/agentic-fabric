@@ -47,13 +47,13 @@ rules:
   - id: eval-call
     decision: deny
     tools: ["write"]
-    arg_patterns: ["(^|[^.\\w])eval\\s*\\(", "\\b(window|globalThis|self)\\.eval\\s*\\("]
+    arg_patterns: ["(^|[^.\\w])eval\\s*\\(", "\\b(window|globalThis|self|_?_?builtins_?_?)\\.eval\\s*\\(", "import_module\\s*\\(\\s*[\"']builtins[\"']\\s*\\)\\s*\\.eval\\s*\\("]
     reason: eval() call in written content
 
   - id: exec-call
     decision: deny
     tools: ["write"]
-    arg_patterns: ["(^|[^.\\w])exec\\s*\\(", "\\bchild_process\\.exec(Sync|File|FileSync)?\\s*\\("]
+    arg_patterns: ["(^|[^.\\w])exec\\s*\\(", "\\bchild_process[\"']?\\s*\\)?\\s*\\.exec(Sync|File|FileSync)?\\s*\\(", "\\b_?_?builtins_?_?\\.exec\\s*\\(", "import_module\\s*\\(\\s*[\"']builtins[\"']\\s*\\)\\s*\\.exec\\s*\\("]
     reason: exec() call in written content
 
   - id: ssh-path-reference
@@ -90,7 +90,7 @@ rules:
     decision: allow
     tools: ["write"]
     arg_patterns: ["\\.(exec|eval)\\s*\\("]
-    reason: "logged, not blocked: a method named exec or eval (regex exec, database cursor exec); the builtin and the known process-spawning forms are denied above"
+    reason: "logged, not blocked: a method named exec or eval (regex exec, database cursor exec). The bare builtin, builtins.exec/eval, and child_process.exec, including require('child_process').exec, are denied above; an aliased module (cp.exec) cannot be told apart from a regex exec by pattern and is allowed here"
 
   - id: destructive-git-reset
     decision: allow
