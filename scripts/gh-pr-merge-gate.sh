@@ -58,8 +58,14 @@ rest=$(printf '%s\n' "$merge_line" | sed -E 's/.*gh[[:space:]]+pr[[:space:]]+mer
 rest=$(printf '%s\n' "$rest" | sed -E 's/[|;&>].*$//')
 target=$(printf '%s\n' $rest | grep -vE '^-|^$' | head -1 || true)
 
-# Honour an explicit --repo so the probe works outside a repo checkout.
-repo_flag=$(printf '%s\n' "$merge_line" | grep -oE '\-\-repo[= ]+[^ ]+' | head -1 | sed -E 's/^--repo[= ]+//')
+# Honour an explicit --repo/-R, read only from the merge's own arguments (before
+# any shell operator). Quotes or more than one repo flag make the target ambiguous.
+args_unquoted=$(printf '%s\n' "$rest" | sed -E "s/'[^']*'/QUOTED/g; s/\"[^\"]*\"/QUOTED/g")
+repo_count=$(printf '%s\n' "$args_unquoted" | grep -oE '(^|[[:space:]])(--repo|-R)([= ]|$)' | wc -l | tr -d ' ')
+repo_flag=$(printf '%s\n' "$args_unquoted" | grep -oE '(^|[[:space:]])(--repo|-R)[= ]+[^ ]+' | head -1 | sed -E 's/^[[:space:]]*(--repo|-R)[= ]+//')
+if [ "$repo_count" -gt 1 ] || { [ "$repo_count" -eq 1 ] && { [ -z "$repo_flag" ] || [ "$repo_flag" = QUOTED ]; }; }; then
+  deny ambiguous-repo "merge gate: the merge names its repository more than once or in quotes, so the PR to check is ambiguous. Run 'gh pr merge <number> --repo owner/name' with a single unquoted --repo."
+fi
 repo_args=()
 [ -n "$repo_flag" ] && repo_args=(--repo "$repo_flag")
 
@@ -67,9 +73,12 @@ command -v gh >/dev/null 2>&1 || \
   deny gh-missing "merge gate: 'gh' is not on the hook's PATH, so PR state cannot be verified. Fix the hook's environment, or merge from your own terminal."
 
 # One probe, stderr captured — never discarded.
+probe_err=$(mktemp)
 pr_json=$(gh pr view ${target:+"$target"} ${repo_args[@]+"${repo_args[@]}"} \
-            --json isDraft,headRefOid,headRefName,url 2>&1)
+            --json isDraft,headRefOid,headRefName,url,isCrossRepository 2>"$probe_err")
 rc=$?
+[ $rc -eq 0 ] || pr_json="$pr_json $(cat "$probe_err")"
+rm -f "$probe_err"
 
 if [ $rc -ne 0 ] || [ -z "$pr_json" ]; then
   deny probe-failed "merge gate: PROBE FAILED (this is not a draft check). 'gh pr view ${target:-<no target>}' exited ${rc} saying: $(printf '%s' "$pr_json" | tr '\n' ' ' | head -c 400). Pass --repo owner/name, or merge from your own terminal."
@@ -81,6 +90,7 @@ is_draft=$(printf '%s' "$pr_json" | jq -r 'if has("isDraft") then (.isDraft|tost
 head_oid=$(printf '%s' "$pr_json" | jq -r '.headRefOid // empty' 2>/dev/null)
 head_ref=$(printf '%s' "$pr_json" | jq -r '.headRefName // empty' 2>/dev/null)
 pr_url=$(printf '%s' "$pr_json" | jq -r '.url // empty' 2>/dev/null)
+cross_repo=$(printf '%s' "$pr_json" | jq -r 'if has("isCrossRepository") then (.isCrossRepository|tostring) else "" end' 2>/dev/null)
 
 [ -n "$is_draft" ] || \
   deny probe-empty "merge gate: PROBE PARSED EMPTY (this is not a draft check). gh returned: $(printf '%s' "$pr_json" | tr '\n' ' ' | head -c 300)"
@@ -89,15 +99,17 @@ pr_url=$(printf '%s' "$pr_json" | jq -r '.url // empty' 2>/dev/null)
   deny draft "merge gate: PR IS STILL A DRAFT. Review first: run '/review-pr ${pr_url:-$target}', address findings, then 'gh pr ready' before merging."
 
 # Stale-head check: GitHub's PR head can lag the branch ref, and merging then
-# silently drops the commits GitHub has not picked up.
-if [ -n "$head_ref" ] && [ -n "$head_oid" ] && [ -n "$pr_url" ]; then
-  owner_repo=$(printf '%s' "$pr_url" | sed -E 's#^https?://[^/]+/([^/]+/[^/]+)/pull/.*#\1#')
-  if [ -n "$owner_repo" ] && [ "$owner_repo" != "$pr_url" ]; then
-    branch_oid=$(gh api "repos/${owner_repo}/commits/${head_ref}" --jq '.sha' 2>/dev/null)
-    if [ -n "$branch_oid" ] && [ "$branch_oid" != "$head_oid" ]; then
-      deny stale-head "merge gate: STALE PR HEAD. GitHub shows the PR at ${head_oid:0:7} but branch '${head_ref}' is at ${branch_oid:0:7}. Merging now would drop the commits GitHub has not picked up. Wait for the PR to catch up, or close and reopen it to force a resync, then merge."
-    fi
-  fi
+# silently drops the commits GitHub has not picked up. A fork PR's branch lives
+# in the fork, so it is not looked up in the base repository.
+if [ "$cross_repo" != "true" ]; then
+  owner_repo=$(printf '%s' "$pr_url" | sed -nE 's#^https://[^/]+/([^/]+/[^/]+)/pull/[0-9]+$#\1#p')
+  [ -n "$owner_repo" ] && [ -n "$head_ref" ] && [ -n "$head_oid" ] || \
+    deny tip-unknown "merge gate: could not read the PR's repository, branch or head from gh, so the stale-head check cannot run. Merge from your own terminal."
+  branch_oid=$(gh api "repos/${owner_repo}/commits/${head_ref}" --jq '.sha' 2>/dev/null) || branch_oid=""
+  [[ $branch_oid =~ ^[0-9a-f]{40}$ ]] || \
+    deny tip-unknown "merge gate: could not read the tip of branch '${head_ref}', so the stale-head check cannot run. Check the branch exists, or merge from your own terminal."
+  [ "$branch_oid" = "$head_oid" ] || \
+    deny stale-head "merge gate: STALE PR HEAD. GitHub shows the PR at ${head_oid:0:7} but branch '${head_ref}' is at ${branch_oid:0:7}. Merging now would drop the commits GitHub has not picked up. Wait for the PR to catch up, or close and reopen it to force a resync, then merge."
 fi
 
 log_gate_decision gh-pr-merge-gate allow merge-permitted
