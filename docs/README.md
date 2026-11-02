@@ -4,6 +4,8 @@ Why this stack is shaped the way it is — the internals, the principles, and th
 
 - [ARCHITECTURE.md](ARCHITECTURE.md) — how the pieces fit: agent families, control/data flow, where memory lives, how a request moves through the system.
 - [DESIGN-PRINCIPLES.md](DESIGN-PRINCIPLES.md) — the load-bearing whys and their tradeoffs. The rules everything else derives from.
+- [THREAT_MODEL.md](THREAT_MODEL.md) — what the stack protects, the threats, the controls and what remains. Read before installing.
+- [EVALUATION.md](EVALUATION.md) — what is and is not measured, and the plan for measuring the rest.
 - [decisions/](decisions/) — Architecture Decision Records. One file per load-bearing choice: the context, the options weighed, what was picked, and what it costs.
 
 The source-of-truth for behavior is still the prompts (`agents/`, `skills/`, `rules/`) and the wiki machinery (`wikis/`, `shared-wiki/`). These docs explain that material — they don't replace it. When a doc and a prompt disagree, the prompt wins and the doc is stale; fix it.
