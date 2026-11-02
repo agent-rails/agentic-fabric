@@ -63,6 +63,9 @@ target=$(printf '%s\n' $rest | grep -vE '^-|^$' | head -1 || true)
 args_unquoted=$(printf '%s\n' "$rest" | sed -E "s/'[^']*'/QUOTED/g; s/\"[^\"]*\"/QUOTED/g")
 repo_count=$(printf '%s\n' "$args_unquoted" | grep -oE '(^|[[:space:]])(--repo|-R)([= ]|$)' | wc -l | tr -d ' ')
 repo_flag=$(printf '%s\n' "$args_unquoted" | grep -oE '(^|[[:space:]])(--repo|-R)[= ]+[^ ]+' | head -1 | sed -E 's/^[[:space:]]*(--repo|-R)[= ]+//')
+case "$rest" in
+  *\\*) printf '%s\n' "$rest" | grep -qE -- '(--repo|-R)' && repo_count=2 ;;
+esac
 if [ "$repo_count" -gt 1 ] || { [ "$repo_count" -eq 1 ] && { [ -z "$repo_flag" ] || [ "$repo_flag" = QUOTED ]; }; }; then
   deny ambiguous-repo "merge gate: the merge names its repository more than once or in quotes, so the PR to check is ambiguous. Run 'gh pr merge <number> --repo owner/name' with a single unquoted --repo."
 fi

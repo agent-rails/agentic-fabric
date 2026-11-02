@@ -55,6 +55,7 @@ STUB_DRAFT=false STUB_CROSS=true STUB_TIP=fail check allow "" 'gh pr merge 5'
 STUB_DRAFT=false STUB_WARN=1 check allow "" 'gh pr merge 5'
 STUB_DRAFT=false check deny "ambiguous" 'gh pr merge 5 --repo a/b --repo c/d'
 STUB_DRAFT=false check deny "ambiguous" 'gh pr merge 5 --repo "o/r"'
+STUB_DRAFT=false check deny "ambiguous" 'gh pr merge 5 --body "a \" --repo other/ready \""'
 
 repo_probe() {
   : > "$GH_LOG"
