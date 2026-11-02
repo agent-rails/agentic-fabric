@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Checks an installed copy of this stack: required tools, hook wiring in settings.json,
-# unreplaced placeholders, and the dependencies the wired hooks fail closed without.
+# unreplaced placeholders, the dependencies the wired hooks fail closed without, and
+# deployed scripts that differ from this repo's copies (a warning, not a failure).
 # Usage: bash scripts/doctor.sh [--claude-dir DIR]   (default: ~/.claude)
 # Exits 1 if any check fails.
 
@@ -57,11 +58,11 @@ while IFS= read -r cmd; do
       if command -v "$exe" >/dev/null 2>&1; then ok "hook command on PATH: $exe"; else bad "hook command not found: $exe"; fi
       ;;
   esac
-  read -r -a words <<< "${cmd#* }"
-  [ "$cmd" != "${cmd#* }" ] || words=()
-  for word in ${words[@]+"${words[@]}"}; do
-    word=${word//\"/}
-    word=${word//\'/}
+  if ! args=$(python3 -c 'import shlex, sys; print("\n".join(shlex.split(sys.argv[1], comments=True)[1:]))' "$cmd" 2>/dev/null); then
+    bad "could not split hook command (unbalanced quotes?): $cmd"
+    continue
+  fi
+  while IFS= read -r word; do
     word=${word/#\~/$HOME}
     case "$word" in
       *'$'*) continue ;;
@@ -69,8 +70,40 @@ while IFS= read -r cmd; do
         if [ -e "$word" ]; then ok "hook script present: $word"; else bad "hook script missing: $word"; fi
         ;;
     esac
-  done
+  done <<< "$args"
 done <<< "$wired"
+
+self_path=${BASH_SOURCE[0]:-}
+REPO_SCRIPTS=""
+[ -n "$self_path" ] && REPO_SCRIPTS=$(python3 -c 'import os, sys; print(os.path.dirname(os.path.realpath(sys.argv[1])))' "$self_path" 2>/dev/null)
+DEPLOYED_SCRIPTS=$(python3 -c 'import os, sys; print(os.path.realpath(sys.argv[1]))' "$CLAUDE_DIR/scripts" 2>/dev/null)
+if [ -z "$REPO_SCRIPTS" ] || [ ! -f "$REPO_SCRIPTS/doctor.test.sh" ]; then
+  warn "drift not checked: cannot locate the repo copy of scripts/ (run doctor.sh from a checkout of this repo)"
+elif ! command -v cmp >/dev/null 2>&1; then
+  warn "drift not checked: cmp not found on PATH"
+elif [ "$REPO_SCRIPTS" = "$DEPLOYED_SCRIPTS" ]; then
+  warn "drift not checked: doctor.sh is running from the deployed copy; run it from a checkout of this repo"
+else
+  drifted=0
+  compared=0
+  for deployed in "$CLAUDE_DIR"/scripts/*; do
+    [ -f "$deployed" ] || continue
+    name=${deployed##*/}
+    case "$name" in *.test.sh) continue ;; esac
+    source_file=$REPO_SCRIPTS/$name
+    [ -f "$source_file" ] || continue
+    compared=$((compared + 1))
+    if ! cmp -s "$deployed" "$source_file"; then
+      warn "drift: $deployed differs from the repo copy $source_file (expected for files you customised; otherwise redeploy)"
+      drifted=$((drifted + 1))
+    fi
+  done
+  if [ "$compared" -eq 0 ]; then
+    warn "drift not checked: no deployed script in $CLAUDE_DIR/scripts has a repo counterpart"
+  elif [ "$drifted" -eq 0 ]; then
+    ok "deployed scripts match the repo copies ($compared compared)"
+  fi
+fi
 
 if grep -q 'scan-write-content.sh' <<< "$wired"; then
   if PATH="$HOME/.local/bin:$PATH" command -v guard >/dev/null 2>&1; then

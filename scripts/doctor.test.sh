@@ -19,7 +19,7 @@ BIN=$WORK/bin
 HOME_DIR=$WORK/home
 CLAUDE=$HOME_DIR/.claude
 mkdir -p "$BIN" "$CLAUDE/scripts" "$HOME_DIR/.local/bin"
-for t in jq python3 grep sort; do ln -s "$(command -v $t)" "$BIN/$t"; done
+for t in jq python3 grep sort cmp; do ln -s "$(command -v $t)" "$BIN/$t"; done
 for t in git gh; do printf '#!/bin/sh\nexit 0\n' > "$BIN/$t"; chmod +x "$BIN/$t"; done
 
 make_hook() { printf '#!/bin/sh\nexit 0\n' > "$1"; chmod +x "$1"; }
@@ -78,6 +78,51 @@ expect_pass "interpreter with a present quoted script passes"
 
 settings 'bash "$CLAUDE_PROJECT_DIR/hooks/x.sh"'
 expect_pass "script path built from a variable is not checked"
+
+mkdir -p "$CLAUDE/my hooks"
+settings "bash \"$CLAUDE/my hooks/gone.sh\""
+expect_fail "missing quoted script path with a space fails" "hook script missing: $CLAUDE/my hooks/gone.sh"
+
+make_hook "$CLAUDE/my hooks/here.sh"
+settings "bash \"$CLAUDE/my hooks/here.sh\""
+expect_pass "present quoted script path with a space passes"
+
+make_hook "$CLAUDE/scripts/gh-pr-create-gate.sh"
+settings "$CLAUDE/scripts/gh-pr-create-gate.sh"
+out=$(run) || true
+echo "$out" | grep -q "warn - drift: $CLAUDE/scripts/gh-pr-create-gate.sh differs" || fail "a deployed script that differs from the repo must warn: $out"
+echo "$out" | grep -q 'all checks passed' || fail "drift must warn, not fail: $out"
+ok "drifted deployed script warns"
+
+cp "$SCRIPT_DIR/gh-pr-create-gate.sh" "$CLAUDE/scripts/gh-pr-create-gate.sh"
+out=$(run) || true
+echo "$out" | grep -q 'ok   - deployed scripts match the repo copies (1 compared)' || fail "an identical deployed script must not warn: $out"
+ok "matching deployed script passes the drift check"
+
+printf '\n' >> "$CLAUDE/scripts/gh-pr-create-gate.sh"
+out=$(run) || true
+echo "$out" | grep -q "warn - drift: $CLAUDE/scripts/gh-pr-create-gate.sh differs" || fail "a trailing-newline difference must count as drift: $out"
+ok "trailing-newline difference is drift"
+cp "$SCRIPT_DIR/gh-pr-create-gate.sh" "$CLAUDE/scripts/gh-pr-create-gate.sh"
+
+cp "$DOCTOR" "$CLAUDE/scripts/doctor.sh"
+out=$(HOME=$HOME_DIR PATH=$BIN "$BASH_BIN" "$CLAUDE/scripts/doctor.sh" --claude-dir "$CLAUDE" 2>&1) || true
+echo "$out" | grep -q 'drift not checked' || fail "doctor run from the deployed copy must not claim a match: $out"
+ok "doctor run from the deployed copy does not claim a match"
+rm "$CLAUDE/scripts/doctor.sh"
+
+settings "$CLAUDE/scripts/gh-pr-create-gate.sh # it's enabled"
+expect_pass "a trailing shell comment with an apostrophe is not a split error"
+
+OTHER=$WORK/other-install
+mkdir -p "$OTHER"
+cp "$DOCTOR" "$OTHER/doctor.sh"
+out=$(HOME=$HOME_DIR PATH=$BIN "$BASH_BIN" "$OTHER/doctor.sh" --claude-dir "$CLAUDE" 2>&1) || true
+echo "$out" | grep -q 'drift not checked: cannot locate the repo copy' || fail "a doctor outside a repo checkout must not compare against its own directory: $out"
+ok "doctor outside a repo checkout does not claim a match"
+
+settings "bash \"$CLAUDE/scripts/unclosed.sh"
+expect_fail "unbalanced quotes in a hook command fail" "could not split"
 
 make_hook "$CLAUDE/scripts/scan-write-content.sh"
 settings "$CLAUDE/scripts/scan-write-content.sh"
