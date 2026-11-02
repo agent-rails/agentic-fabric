@@ -78,6 +78,8 @@ grep -rn "your-org\|youralias\|YOUR_SLACK\|you@example.com\|/Users/youruser" ~/.
 
 5. **Wire the hooks.** Merge `docs/settings.hooks.example.json` into `~/.claude/settings.json`, swapping every `/Users/youruser/...` path for your real home and replacing the `your-pretool-hook` / `your-stop-guard` placeholders with your own commands (or removing those entries if you don't have them).
 
+Before restarting, run `bash scripts/doctor.sh` (or `bash scripts/doctor.sh --claude-dir DIR`). It checks the required tools, that every wired hook exists and is executable, that no placeholder is left in a hook command, and the dependencies the wired hooks fail closed without (`guard` for the write scan, a real branch prefix for the branch hook). Fix every `FAIL` first: a wired write scan without `guard` denies every Write and Edit.
+
 Restart Claude Code so it picks up the new agents, skills, and hooks. Then run **Verify** below.
 
 Optional add-ons (do after the core path works): [report automation](#optional-report-automation-macos) and [Slack delivery](#optional-report-automation-macos).
@@ -177,7 +179,7 @@ These are prompts and hooks that drive an agent with real tool access (shell, `g
 
 - **Review before you run.** Read the agent definitions, skills, and hook scripts before copying them into `~/.claude/`.
 - **Keep outbound actions human-gated.** Message sends and PR merges are gated by design (see the PR-create draft gate and the `[Send]/[Edit]/[Skip]` triage flow); keep them that way.
-- **Cross-vendor CLIs run read-only.** `your-cross-vendor-reviewer`/`your-patch-drafter` wrap `codex exec --sandbox read-only` and never write files — the orchestrator applies any patch under your permission model.
+- **Cross-vendor CLIs are write-protected, not read-isolated.** `your-cross-vendor-reviewer`/`your-patch-drafter` wrap `codex exec --sandbox read-only` and never write files — the orchestrator applies any patch under your permission model. The sandbox does not stop reads outside the repository: with Codex CLI 0.160.0 I ran it from an empty directory and it read a file in a sibling directory. Anything the process can read, and anything it quotes in its answer, can leave the machine. Run the cascade only on code you are willing to send to the second vendor, and keep secrets out of reach of that account.
 
 To report a vulnerability, see [SECURITY.md](SECURITY.md).
 ## Placeholders

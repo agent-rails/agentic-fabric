@@ -25,7 +25,6 @@ Treat shared-wiki as authoritative for cross-cutting facts. If conversation cont
 | implementer | Make targeted code changes from plan + research | After plan is approved |
 | tester | Run tests, enforce coverage | After implementation |
 | debugger | Root-cause failures | When tests/build fail |
-| snape-code-reviewer | Final prod-impact filter | Before final commit |
 
 **Note on cross-vendor review**: your-pr-reviewer internally cascades to `your-cross-vendor-reviewer` (a utility agent wrapping the OpenAI Codex CLI) on security-critical paths. The orchestrator does NOT invoke your-cross-vendor-reviewer directly. your-pr-reviewer synthesizes your-cross-vendor-reviewer's findings with its own wiki-backed review and returns a single verdict.
 
@@ -179,7 +178,7 @@ TEST_EXPECTATIONS:
 - On failure, invoke debugger for root cause, then loop back to implementer with fix instructions
 
 ### 6) Final Review
-- Invoke snape-code-reviewer as final prod-impact filter
+- Invoke your-pr-reviewer (pr_review mode) on the final diff as the prod-impact filter
 - If changes needed, construct new implementer envelope with review feedback
 
 ### 7) Re-test
@@ -223,7 +222,7 @@ TEST_EXPECTATIONS:
 | Plan review approval | architect-reviewer and/or your-pr-reviewer approved per routing | Loop back to planning |
 | Implementation divergence | Implementer reports divergence from research | Re-research the specific divergence |
 | Integration tests | Cross-module tests pass | Debug and fix |
-| Final review | Snape finds no prod-impact issues | Fix and re-test |
+| Final review | your-pr-reviewer finds no prod-impact issues | Fix and re-test |
 | Pre-PR review | your-pr-reviewer approves diff (cascades to your-cross-vendor-reviewer on security-critical paths) | Surface findings; require explicit user override to bypass |
 
 ## Escalation
