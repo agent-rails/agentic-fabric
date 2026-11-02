@@ -169,7 +169,7 @@ Trust the inside; fail loud at the edge.
 
 Skill invocations are captured by a `PreToolUse` hook with matcher `Skill`,
 configured in `~/.claude/settings.json`. The hook script at
-`~/your-triage-agent/scripts/log-skill-invocation.sh` appends one JSON line per
+`~/your-triage-agent/log-skill-invocation.sh` appends one JSON line per
 invocation to `~/your-triage-agent/wiki/recurring/.invocations.jsonl`:
 
 ```json

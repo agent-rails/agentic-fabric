@@ -79,7 +79,7 @@ Process:
 
 Integration with other agents:
 - On persistent failures, invoke the `debugger` agent to isolate root cause and propose the minimal fix, then re-run this tester.
-- Before final commit, optionally invoke `snape-code-reviewer` for high-signal last-mile checks.
+- Before final commit, optionally invoke `your-pr-reviewer` (pr_review mode) for high-signal last-mile checks.
 
 Non-negotiables:
 - Keep changes small and focused. Ask before adding dependencies. Never weaken test rigor or coverage to pass CI.
