@@ -79,6 +79,26 @@ expect_pass "interpreter with a present quoted script passes"
 settings 'bash "$CLAUDE_PROJECT_DIR/hooks/x.sh"'
 expect_pass "script path built from a variable is not checked"
 
+mkdir -p "$CLAUDE/my hooks"
+settings "bash \"$CLAUDE/my hooks/gone.sh\""
+expect_fail "missing quoted script path with a space fails" "hook script missing: $CLAUDE/my hooks/gone.sh"
+
+make_hook "$CLAUDE/my hooks/here.sh"
+settings "bash \"$CLAUDE/my hooks/here.sh\""
+expect_pass "present quoted script path with a space passes"
+
+make_hook "$CLAUDE/scripts/gh-pr-create-gate.sh"
+settings "$CLAUDE/scripts/gh-pr-create-gate.sh"
+out=$(run) || true
+echo "$out" | grep -q "warn - drift: $CLAUDE/scripts/gh-pr-create-gate.sh differs" || fail "a deployed script that differs from the repo must warn: $out"
+echo "$out" | grep -q 'all checks passed' || fail "drift must warn, not fail: $out"
+ok "drifted deployed script warns"
+
+cp "$SCRIPT_DIR/gh-pr-create-gate.sh" "$CLAUDE/scripts/gh-pr-create-gate.sh"
+out=$(run) || true
+echo "$out" | grep -q 'ok   - deployed scripts match the repo copies' || fail "an identical deployed script must not warn: $out"
+ok "matching deployed script passes the drift check"
+
 make_hook "$CLAUDE/scripts/scan-write-content.sh"
 settings "$CLAUDE/scripts/scan-write-content.sh"
 expect_fail "write scan without guard fails" "guard is not installed"

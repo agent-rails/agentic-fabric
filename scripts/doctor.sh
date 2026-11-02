@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Checks an installed copy of this stack: required tools, hook wiring in settings.json,
-# unreplaced placeholders, and the dependencies the wired hooks fail closed without.
+# unreplaced placeholders, the dependencies the wired hooks fail closed without, and
+# deployed scripts that differ from this repo's copies (a warning, not a failure).
 # Usage: bash scripts/doctor.sh [--claude-dir DIR]   (default: ~/.claude)
 # Exits 1 if any check fails.
 
@@ -57,11 +58,11 @@ while IFS= read -r cmd; do
       if command -v "$exe" >/dev/null 2>&1; then ok "hook command on PATH: $exe"; else bad "hook command not found: $exe"; fi
       ;;
   esac
-  read -r -a words <<< "${cmd#* }"
-  [ "$cmd" != "${cmd#* }" ] || words=()
-  for word in ${words[@]+"${words[@]}"}; do
-    word=${word//\"/}
-    word=${word//\'/}
+  if ! args=$(python3 -c 'import shlex, sys; print("\n".join(shlex.split(sys.argv[1])[1:]))' "$cmd" 2>/dev/null); then
+    warn "could not split hook command to check its script arguments: $cmd"
+    continue
+  fi
+  while IFS= read -r word; do
     word=${word/#\~/$HOME}
     case "$word" in
       *'$'*) continue ;;
@@ -69,8 +70,24 @@ while IFS= read -r cmd; do
         if [ -e "$word" ]; then ok "hook script present: $word"; else bad "hook script missing: $word"; fi
         ;;
     esac
-  done
+  done <<< "$args"
 done <<< "$wired"
+
+REPO_SCRIPTS=${BASH_SOURCE[0]%/*}
+[ "$REPO_SCRIPTS" != "${BASH_SOURCE[0]}" ] || REPO_SCRIPTS=.
+drifted=0
+for deployed in "$CLAUDE_DIR"/scripts/*; do
+  [ -f "$deployed" ] || continue
+  name=${deployed##*/}
+  case "$name" in *.test.sh) continue ;; esac
+  source_file=$REPO_SCRIPTS/$name
+  [ -f "$source_file" ] || continue
+  if [ "$(<"$deployed")" != "$(<"$source_file")" ]; then
+    warn "drift: $deployed differs from the repo copy $source_file (expected for files you customised; otherwise redeploy)"
+    drifted=$((drifted + 1))
+  fi
+done
+[ "$drifted" -gt 0 ] || ok "deployed scripts match the repo copies"
 
 if grep -q 'scan-write-content.sh' <<< "$wired"; then
   if PATH="$HOME/.local/bin:$PATH" command -v guard >/dev/null 2>&1; then
