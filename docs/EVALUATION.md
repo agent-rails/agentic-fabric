@@ -1,6 +1,6 @@
 # Evaluation
 
-**Status: there are no measured results for the review cascade, the severity calibration or the prompt-versus-hook claim.** The hook gates have tests (see `scripts/*.test.sh`); everything else this repo says about how well it works is a design intent or the author's experience over months of daily use, not a measurement. This page says what would be measured, how, and what would count against the design. It is a plan, and it will be replaced by results when there are results.
+**Status: there are no measured results for the review cascade, the severity calibration or the prompt-versus-hook claim.** Some hooks have tests (see `scripts/*.test.sh`); everything else this repo says about how well it works is a design intent or the author's experience over months of daily use, not a measurement. This page says what would be measured, how, and what would count against the design. It is a plan, and it will be replaced by results when there are results.
 
 ## Claims in this repo that have no measurement
 
@@ -14,7 +14,7 @@
 
 ## Questions
 
-1. **Do the hook gates hold?** Metric: bypass rate over a catalogue of command forms, reported per hook and per route. Status: started. The PR create and merge gates have table-driven tests that include known bypasses and fail on the earlier implementation. The branch, write-scan and gate-page hooks have no equivalent catalogue.
+1. **Do the hook gates hold?** Metric: bypass rate over a catalogue of command forms, reported per hook and per route. Status: not started. The PR gates match command text; a parser rewrite was reviewed and dropped after two cross-vendor rounds found it allowed forms the text match denied. The merge gate has a stub-based test of its draft, probe-failure and stale-head paths (once #18 lands); the create, branch, write-scan and gate-page hooks have no bypass catalogue. The write-content policy has 29 engine-level cases in `scripts/write-content-policy.test.sh`.
 2. **Does the cascade find more real defects than one reviewer?** Metric: recall of seeded defects at a fixed false-positive budget, with token cost reported next to it. Arms: (a) one reviewer; (b) one reviewer plus the same-vendor fresh pass; (c) the cross-vendor cascade.
 3. **Is severity calibrated?** Metric: for each severity label the reviewer assigns, the share of findings that are real defects. A calibrated reviewer's blockers should be real more often than its minors.
 4. **How often is a prompt-only rule skipped, compared with the same rule as a hook?** Metric: skip rate over repeated runs of the same task, per rule, with the intervals shown. This is what would replace the illustrative figure above.

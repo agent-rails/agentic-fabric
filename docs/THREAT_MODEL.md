@@ -29,21 +29,22 @@ The bundle is prompts, skills and shell/Python hooks that you copy into `~/.clau
 
 | # | Threat | Control today | Status | Remaining risk |
 |---|---|---|---|---|
-| T1 | The agent merges, or opens a non-draft PR, by mistake | PR create and merge gates parse the command and deny the unsafe form, including `--repo`, API calls and `bash -c`; unparsable commands are denied | tested | `gh` inside a quoted command substitution, `eval`, shell variables and aliases, scripts that call `gh`, and other GitHub clients such as `curl` are not seen |
+| T1 | The agent merges, or opens a non-draft PR, by mistake | PR create gate denies text matching `gh pr create` without `--draft`; PR merge gate looks up the PR and denies a draft, a failed lookup or a head that lags its branch | read for create; tested for the merge gate's lookup paths (with #18) | Text matching: `--draft` anywhere in the command (even a body) satisfies the create gate; `gh api` calls, quote-split spellings (`"g"h`), shell variables, aliases, scripts that call `gh`, and clients such as `curl` are not seen |
 | T2 | The agent sends a message or reply without approval | The triage flow asks `[Send]/[Edit]/[Skip]` | read, prompt only | No hook enforces it. A model that skips the step is not stopped |
 | T3 | Prompt injection through untrusted content | Review prompts wrap captured output in nonce-delimited untrusted blocks; the write scan pattern-matches written content | read | The agent still has a shell. Delimiters and a regex do not stop a model that follows an instruction found in a diff or web page |
 | T4 | The agent edits the rubric that grades it | Gate-page protection denies Edit/Write to those paths unless a human creates an unlock marker; fails closed without `jq` | read | Only the Edit, Write and NotebookEdit tools pass through it. A shell redirect does not |
 | T5 | Source or secrets leave the machine through the second vendor | Cross-vendor review is optional and runs the vendor CLI with a read-only sandbox | observed | The read-only sandbox blocked writes but not reads outside the repository (Codex CLI 0.160.0, macOS: a file in a sibling directory was read). Anything readable and quoted in the answer can leave |
 | T6 | A malicious or compromised copy of this repo or a fork | Documentation asks you to read hooks before wiring them; a skill scanner exists | read | No signed releases, no pinned versions, install is a manual copy. A hook is code that runs with your privileges |
 | T7 | Memory poisoning: a bad wiki page steers later sessions | Convention pages are protected (T4); scribes write the rest | read | Non-convention pages are writable by agents and trusted on the next read |
-| T8 | A hook fails and quietly allows the action | See the table below | tested for the PR gates, the write-scan dependency check and the installer check; read for the rest | The convention hooks fail open on purpose |
+| T8 | A hook fails and quietly allows the action | See the table below | tested for the merge gate's failed lookup, the write-scan dependency check and the installer check; read for the rest | The convention hooks fail open on purpose; the PR create gate fails open on an error |
 | T9 | Secrets in written content or logs | The write scan logs but does not block credential words and long base64 strings | read | No secret-shape detector: assignments such as `password=` or `api_key=` match no rule, as the policy file itself says |
 
 ### Failure posture of each hook
 
 | Hook | If it errors or cannot parse | Why |
 |---|---|---|
-| PR create gate, PR merge gate | deny | these guard actions that are hard to reverse |
+| PR merge gate | deny when the PR lookup fails or returns no draft state; allow when the payload cannot be read (the command text comes out empty) | merging is hard to reverse, but the lookup is the only part with a deny path |
+| PR create gate | allow: it runs under `set -e`, and Claude Code treats a non-zero exit other than 2 as a non-blocking error | text match only; known gap |
 | Write-content scan | deny (also when `guard` or `jq` is missing, which blocks every Write and Edit) | content that cannot be checked should not land |
 | Gate-page protection | deny for protected paths when `jq` is missing; allow otherwise, with a warning | narrow fail-closed |
 | Branch-prefix hook | allow | a naming convention, not a boundary |
