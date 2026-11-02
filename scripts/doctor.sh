@@ -59,7 +59,7 @@ while IFS= read -r cmd; do
       ;;
   esac
   if ! args=$(python3 -c 'import shlex, sys; print("\n".join(shlex.split(sys.argv[1])[1:]))' "$cmd" 2>/dev/null); then
-    warn "could not split hook command to check its script arguments: $cmd"
+    bad "could not split hook command (unbalanced quotes?): $cmd"
     continue
   fi
   while IFS= read -r word; do
@@ -73,21 +73,35 @@ while IFS= read -r cmd; do
   done <<< "$args"
 done <<< "$wired"
 
-REPO_SCRIPTS=${BASH_SOURCE[0]%/*}
-[ "$REPO_SCRIPTS" != "${BASH_SOURCE[0]}" ] || REPO_SCRIPTS=.
-drifted=0
-for deployed in "$CLAUDE_DIR"/scripts/*; do
-  [ -f "$deployed" ] || continue
-  name=${deployed##*/}
-  case "$name" in *.test.sh) continue ;; esac
-  source_file=$REPO_SCRIPTS/$name
-  [ -f "$source_file" ] || continue
-  if [ "$(<"$deployed")" != "$(<"$source_file")" ]; then
-    warn "drift: $deployed differs from the repo copy $source_file (expected for files you customised; otherwise redeploy)"
-    drifted=$((drifted + 1))
+self_path=${BASH_SOURCE[0]:-}
+REPO_SCRIPTS=""
+[ -n "$self_path" ] && REPO_SCRIPTS=$(python3 -c 'import os, sys; print(os.path.dirname(os.path.realpath(sys.argv[1])))' "$self_path" 2>/dev/null)
+DEPLOYED_SCRIPTS=$(python3 -c 'import os, sys; print(os.path.realpath(sys.argv[1]))' "$CLAUDE_DIR/scripts" 2>/dev/null)
+if [ -z "$REPO_SCRIPTS" ] || [ ! -f "$REPO_SCRIPTS/doctor.sh" ]; then
+  warn "drift not checked: cannot locate the repo copy of scripts/ (run doctor.sh from a checkout of this repo)"
+elif [ "$REPO_SCRIPTS" = "$DEPLOYED_SCRIPTS" ]; then
+  warn "drift not checked: doctor.sh is running from the deployed copy; run it from a checkout of this repo"
+else
+  drifted=0
+  compared=0
+  for deployed in "$CLAUDE_DIR"/scripts/*; do
+    [ -f "$deployed" ] || continue
+    name=${deployed##*/}
+    case "$name" in *.test.sh) continue ;; esac
+    source_file=$REPO_SCRIPTS/$name
+    [ -f "$source_file" ] || continue
+    compared=$((compared + 1))
+    if ! cmp -s "$deployed" "$source_file"; then
+      warn "drift: $deployed differs from the repo copy $source_file (expected for files you customised; otherwise redeploy)"
+      drifted=$((drifted + 1))
+    fi
+  done
+  if [ "$compared" -eq 0 ]; then
+    warn "drift not checked: no deployed script in $CLAUDE_DIR/scripts has a repo counterpart"
+  elif [ "$drifted" -eq 0 ]; then
+    ok "deployed scripts match the repo copies ($compared compared)"
   fi
-done
-[ "$drifted" -gt 0 ] || ok "deployed scripts match the repo copies"
+fi
 
 if grep -q 'scan-write-content.sh' <<< "$wired"; then
   if PATH="$HOME/.local/bin:$PATH" command -v guard >/dev/null 2>&1; then
