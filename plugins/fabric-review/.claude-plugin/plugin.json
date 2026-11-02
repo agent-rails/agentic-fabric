@@ -1,0 +1,8 @@
+{
+  "name": "fabric-review",
+  "version": "0.1.0",
+  "description": "A diff-review protocol that requires evidence for every finding and calibrates severity, with a seeded-defect eval suite that measures it against no plugin.",
+  "author": {
+    "name": "voltagebots"
+  }
+}
