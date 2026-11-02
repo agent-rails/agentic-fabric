@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/Users/youruser/your-triage-agent/scripts/log-skill-invocation.sh",
+            "command": "/Users/youruser/your-triage-agent/log-skill-invocation.sh",
             "timeout": 5
           }
         ]

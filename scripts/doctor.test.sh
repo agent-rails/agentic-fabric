@@ -69,6 +69,16 @@ expect_fail "non-executable hook fails" "not executable"
 settings "nosuchcommand"
 expect_fail "bare command not on PATH fails" "hook command not found"
 
+ln -sf "$BASH_BIN" "$BIN/bash"
+settings "bash $CLAUDE/scripts/nonexistent-hook.sh"
+expect_fail "interpreter with a missing script fails" "hook script missing"
+
+settings "bash \"$CLAUDE/scripts/gh-pr-create-gate.sh\""
+expect_pass "interpreter with a present quoted script passes"
+
+settings 'bash "$CLAUDE_PROJECT_DIR/hooks/x.sh"'
+expect_pass "script path built from a variable is not checked"
+
 make_hook "$CLAUDE/scripts/scan-write-content.sh"
 settings "$CLAUDE/scripts/scan-write-content.sh"
 expect_fail "write scan without guard fails" "guard is not installed"

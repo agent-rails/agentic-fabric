@@ -57,6 +57,19 @@ while IFS= read -r cmd; do
       if command -v "$exe" >/dev/null 2>&1; then ok "hook command on PATH: $exe"; else bad "hook command not found: $exe"; fi
       ;;
   esac
+  read -r -a words <<< "${cmd#* }"
+  [ "$cmd" != "${cmd#* }" ] || words=()
+  for word in ${words[@]+"${words[@]}"}; do
+    word=${word//\"/}
+    word=${word//\'/}
+    word=${word/#\~/$HOME}
+    case "$word" in
+      *'$'*) continue ;;
+      /*.sh|/*.py)
+        if [ -e "$word" ]; then ok "hook script present: $word"; else bad "hook script missing: $word"; fi
+        ;;
+    esac
+  done
 done <<< "$wired"
 
 if grep -q 'scan-write-content.sh' <<< "$wired"; then
