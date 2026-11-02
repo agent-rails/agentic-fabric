@@ -21,6 +21,13 @@ jobs:
             bash -n "$f"
           done
 
+      - name: Install agent-guard for the policy suite
+        run: |
+          set -euo pipefail
+          python3 -m venv "$RUNNER_TEMP/guard"
+          "$RUNNER_TEMP/guard/bin/pip" install --quiet "git+https://github.com/agent-rails/agent-guard@d5c12a9b6426a8f30f3c4216d0c702ac6e751d79"
+          echo "$RUNNER_TEMP/guard/bin" >> "$GITHUB_PATH"
+
       - name: Run the script test suites
         run: |
           set -euo pipefail

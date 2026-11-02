@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Tests for policies/write-content-scan.yaml through the real guard engine. Run directly:
 #   bash scripts/write-content-policy.test.sh
-# Skips (exit 0, loudly) when guard is not installed. WRITE_POLICY overrides the policy path.
+# Skips (exit 0, loudly) when guard is not installed, except under CI=true, where it fails. WRITE_POLICY overrides the policy path.
 
 set -euo pipefail
 
@@ -10,6 +10,10 @@ POLICY=${WRITE_POLICY:-$SCRIPT_DIR/../policies/write-content-scan.yaml}
 export PATH="$HOME/.local/bin:$PATH"
 
 if ! command -v guard >/dev/null 2>&1; then
+  if [ "${CI:-}" = true ]; then
+    echo "FAIL: guard is not installed in CI; this suite must run there" >&2
+    exit 1
+  fi
   echo "skip - guard is not installed; this suite did not run (see README Prerequisites)"
   exit 0
 fi
