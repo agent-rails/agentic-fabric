@@ -58,7 +58,7 @@ while IFS= read -r cmd; do
       if command -v "$exe" >/dev/null 2>&1; then ok "hook command on PATH: $exe"; else bad "hook command not found: $exe"; fi
       ;;
   esac
-  if ! args=$(python3 -c 'import shlex, sys; print("\n".join(shlex.split(sys.argv[1])[1:]))' "$cmd" 2>/dev/null); then
+  if ! args=$(python3 -c 'import shlex, sys; print("\n".join(shlex.split(sys.argv[1], comments=True)[1:]))' "$cmd" 2>/dev/null); then
     bad "could not split hook command (unbalanced quotes?): $cmd"
     continue
   fi
@@ -77,8 +77,10 @@ self_path=${BASH_SOURCE[0]:-}
 REPO_SCRIPTS=""
 [ -n "$self_path" ] && REPO_SCRIPTS=$(python3 -c 'import os, sys; print(os.path.dirname(os.path.realpath(sys.argv[1])))' "$self_path" 2>/dev/null)
 DEPLOYED_SCRIPTS=$(python3 -c 'import os, sys; print(os.path.realpath(sys.argv[1]))' "$CLAUDE_DIR/scripts" 2>/dev/null)
-if [ -z "$REPO_SCRIPTS" ] || [ ! -f "$REPO_SCRIPTS/doctor.sh" ]; then
+if [ -z "$REPO_SCRIPTS" ] || [ ! -f "$REPO_SCRIPTS/doctor.test.sh" ]; then
   warn "drift not checked: cannot locate the repo copy of scripts/ (run doctor.sh from a checkout of this repo)"
+elif ! command -v cmp >/dev/null 2>&1; then
+  warn "drift not checked: cmp not found on PATH"
 elif [ "$REPO_SCRIPTS" = "$DEPLOYED_SCRIPTS" ]; then
   warn "drift not checked: doctor.sh is running from the deployed copy; run it from a checkout of this repo"
 else

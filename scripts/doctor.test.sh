@@ -107,9 +107,19 @@ cp "$SCRIPT_DIR/gh-pr-create-gate.sh" "$CLAUDE/scripts/gh-pr-create-gate.sh"
 
 cp "$DOCTOR" "$CLAUDE/scripts/doctor.sh"
 out=$(HOME=$HOME_DIR PATH=$BIN "$BASH_BIN" "$CLAUDE/scripts/doctor.sh" --claude-dir "$CLAUDE" 2>&1) || true
-echo "$out" | grep -q 'drift not checked: doctor.sh is running from the deployed copy' || fail "doctor run from the deployed copy must not claim a match: $out"
+echo "$out" | grep -q 'drift not checked' || fail "doctor run from the deployed copy must not claim a match: $out"
 ok "doctor run from the deployed copy does not claim a match"
 rm "$CLAUDE/scripts/doctor.sh"
+
+settings "$CLAUDE/scripts/gh-pr-create-gate.sh # it's enabled"
+expect_pass "a trailing shell comment with an apostrophe is not a split error"
+
+OTHER=$WORK/other-install
+mkdir -p "$OTHER"
+cp "$DOCTOR" "$OTHER/doctor.sh"
+out=$(HOME=$HOME_DIR PATH=$BIN "$BASH_BIN" "$OTHER/doctor.sh" --claude-dir "$CLAUDE" 2>&1) || true
+echo "$out" | grep -q 'drift not checked: cannot locate the repo copy' || fail "a doctor outside a repo checkout must not compare against its own directory: $out"
+ok "doctor outside a repo checkout does not claim a match"
 
 settings "bash \"$CLAUDE/scripts/unclosed.sh"
 expect_fail "unbalanced quotes in a hook command fail" "could not split"
