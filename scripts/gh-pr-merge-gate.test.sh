@@ -63,11 +63,28 @@ check deny  false 'gh api graphql -f query="mutation { mergePullRequest(input: {
 check allow true  'gh api repos/o/r/pulls/5'
 check allow true  'gh pr view 5'
 check allow true  'gh pr ready 5'
-check allow true  'echo "gh pr merge is mentioned in text"'
+check deny  false 'echo "gh pr merge is mentioned in text"'
+check deny  true  '{ gh pr merge 5; }'
+check deny  false '{ gh pr merge 5; }'
+check deny  false 'timeout 9 gh pr merge 5'
+check deny  false 'echo "$(gh pr merge 5)"'
+check deny  true  $'# merge it\ngh pr merge 5'
+check deny  true  'gh pr -R o/r merge 5'
+check deny  false 'gh api graphql -F query=@m.graphql'
+check deny  false 'gh api graphql --input q.json'
+check deny  false "gh api graphql -f query='mutation{enablePullRequestAutoMerge(input:{pullRequestId:\"x\"}){clientMutationId}}'"
+check deny  false 'gh api -X PUT repos/o/r/pulls/1//merge'
+check deny  false 'gh api -X PUT "repos/o/r/pulls/1/merge?x=1"'
+check allow true  'gh api repos/o/r/pulls/1/merge' 
 check allow true  'git push origin HEAD'
 check deny  false 'gh pr merge 5 --body "unterminated'
 check deny  true  '"g"h pr merge 5'
 check deny  true  'g\h pr merge 5'
+
+: > "$GH_LOG"
+payload 'GH_REPO=o/other gh pr merge 8' | STUB_DRAFT=false bash "$HOOK" > /dev/null
+grep -q -- 'pr view 8 --repo o/other' "$GH_LOG" || fail "GH_REPO must scope the draft lookup, got: $(cat "$GH_LOG")"
+ok "draft lookup honours GH_REPO"
 
 : > "$GH_LOG"
 payload 'gh pr merge --repo o/r 7' | STUB_DRAFT=false bash "$HOOK" > /dev/null
@@ -104,5 +121,13 @@ payload 'gh pr merge 5' | PATH="$SPY:$PATH" bash "$HOOK" > /dev/null
 [ "$(wc -l < "$SPY/calls" | tr -d ' ')" = 1 ] || fail "a gh command must start python once"
 ok "allow - a gh command is inspected"
 rm -rf "$SPY"
+
+PATHOUT=$(payload 'gh pr merge 5' | PATH=/nonexistent /bin/bash "$HOOK")
+echo "$PATHOUT" | grep -q '"permissionDecision": *"deny"' || fail "a hook PATH without python3 or grep must deny, got: $PATHOUT"
+ok "deny - minimal PATH fails closed"
+
+ESC=$(printf '%s' '{"tool_input":{"command":"\u0067h pr merge 5"}}' | STUB_DRAFT=true bash "$HOOK")
+echo "$ESC" | grep -q '"permissionDecision": *"deny"' || fail "a JSON-escaped gh must still be checked, got: $ESC"
+ok "deny - JSON-escaped gh is checked"
 
 echo "all $pass tests passed"

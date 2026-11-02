@@ -6,9 +6,18 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from gh_command import Invocation, ParseError, api_fields, api_method, gh_invocations
+from gh_command import (
+    Invocation,
+    ParseError,
+    api_endpoint,
+    api_fields,
+    api_method,
+    api_reads_from_file,
+    gh_invocations,
+    text_mentions,
+)
 
-GH_SPELLING = re.compile(r"g[\\'\"]*h")
+GH_SPELLING = re.compile(r"g[\\'\"\n]*h")
 MERGE_ENDPOINT = re.compile(r"^/?repos/[^/]+/[^/]+/pulls/[^/]+/merge/?$")
 VIEW_TIMEOUT_SECONDS = 8
 
@@ -37,21 +46,30 @@ def deny(reason: str) -> None:
     sys.exit(0)
 
 
+UNPARSED_REASON = (
+    "This command mentions 'gh pr merge' in a form the gate cannot parse (a wrapper, group, "
+    "substitution or quoted text), so the ready-to-merge check cannot run. Run 'gh pr merge <number> "
+    "--repo owner/name' as a plain command, and put text that mentions it in a file or heredoc."
+)
+MERGE_MUTATIONS = ("mergePullRequest", "enablePullRequestAutoMerge")
+
+
 def merges_through_api(inv: Invocation) -> bool:
     if inv.path != ("api",):
         return False
-    method = api_method(inv)
-    endpoint = inv.positionals[0] if inv.positionals else ""
-    if method == "PUT" and MERGE_ENDPOINT.match(endpoint):
-        return True
-    return endpoint == "graphql" and any("mergePullRequest" in v for v in api_fields(inv).values())
+    endpoint = api_endpoint(inv)
+    if endpoint == "graphql":
+        if api_reads_from_file(inv):
+            return True
+        return any(m in v for v in api_fields(inv).values() for m in MERGE_MUTATIONS)
+    return MERGE_ENDPOINT.match(endpoint) is not None and api_method(inv) != "GET"
 
 
 def draft_state(inv: Invocation) -> str:
     cmd = ["gh", "pr", "view"]
     if inv.positionals:
         cmd.append(inv.positionals[0])
-    repo = inv.flag("R", "repo")
+    repo = inv.flag("R", "repo") or inv.env.get("GH_REPO")
     if isinstance(repo, str):
         cmd.extend(["--repo", repo])
     cmd.extend(["--json", "isDraft", "--jq", ".isDraft"])
@@ -74,6 +92,8 @@ def main() -> None:
         invocations = gh_invocations(cmd)
     except ParseError as e:
         deny(f"Could not parse this command, so the ready-to-merge check cannot run ({e}). Simplify the command and retry.")
+    if text_mentions(cmd, "merge") > sum(inv.path == ("pr", "merge") for inv in invocations):
+        deny(UNPARSED_REASON)
     for inv in invocations:
         if merges_through_api(inv):
             deny(API_REASON)

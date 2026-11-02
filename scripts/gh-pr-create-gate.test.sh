@@ -18,7 +18,7 @@ check() {
   out=$(payload "$cmd" | bash "$HOOK")
   if echo "$out" | grep -q '"permissionDecision": *"deny"'; then
     [ "$want" = deny ] || fail "expected allow, got deny: $cmd"
-    echo "$out" | grep -q 'Review-first\|Could not parse' || fail "deny without a reason: $cmd"
+    echo "$out" | grep -q 'Review-first\|Could not parse\|cannot parse' || fail "deny without a reason: $cmd"
   else
     [ "$want" = allow ] || fail "expected deny, got allow: $cmd"
     [ -z "$out" ] || fail "allow must be silent, got: $out"
@@ -60,7 +60,32 @@ check allow 'gh pr view 5'
 check allow 'gh pr list --draft'
 check allow 'gh issue create --title t'
 check allow 'git push origin HEAD'
-check allow 'echo "gh pr create is mentioned in text"'
+check deny  'echo "gh pr create is mentioned in text"'
+check deny  $'gh pr \\\ncreate -t x'
+check deny  $'g\\\nh pr create -t x'
+check deny  $'gh pr create \\\n  --title x'
+check allow $'gh pr create \\\n  --draft --title x'
+check deny  $'# open the PR\ngh pr create -t x'
+check deny  'echo a#b; gh pr create -t x'
+check deny  'gh pr create -t x # --draft'
+check deny  '{ gh pr create -t x; }'
+check deny  'if true; then gh pr create -t x; fi'
+check deny  'timeout 5 gh pr create -t x'
+check deny  'sudo gh pr create -t x'
+check deny  'echo $(gh pr create -t x)'
+check deny  'gh pr new -t x'
+check deny  'gh pr create -t x -d=false'
+check allow 'gh pr create -t x -d=true'
+check deny  'gh -R o/r pr create -t x'
+check deny  'gh pr -R o/r create -t x'
+check deny  'gh api repos/o/r/pulls --input body.json'
+check deny  'gh api //repos/o/r/pulls?x=1 -f title=x'
+check deny  "gh api graphql -f query='mutation{createPullRequest(input:{title:\"t\"}){pullRequest{id}}}'"
+check allow "gh api graphql -f query='mutation{createPullRequest(input:{title:\"t\",draft:true}){pullRequest{id}}}'"
+check deny  'gh api graphql -F query=@q.graphql'
+check allow 'gh pr view 5'
+check allow 'gh pr list --draft'
+check allow 'git commit -m "fix: tidy" && git push' 
 check deny  'gh pr create --title "unterminated'
 check deny  '"g"h pr create --title t'
 check deny  'g\h pr create --title t'

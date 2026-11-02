@@ -4,15 +4,17 @@
 # A command with no "g", optional quote or backslash characters, then "h" cannot spell gh,
 # so it skips Python entirely (about 6 ms instead of about 47 ms).
 
-SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+SCRIPT_DIR=${BASH_SOURCE[0]%/*}
+[ "$SCRIPT_DIR" != "${BASH_SOURCE[0]}" ] || SCRIPT_DIR=.
 
 deny() {
   printf '%s\n' "{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"gh-pr-create-gate: $1\"}}"
   exit 0
 }
 
-input=$(cat)
-printf '%s' "$input" | grep -Eq "g[\\\\'\"]*h" || exit 0
+IFS= read -r -d '' input || true
+GH_SPELLING="g[\\'\"n]*h|\\\\u"
+[[ $input =~ $GH_SPELLING ]] || exit 0
 
 command -v python3 >/dev/null 2>&1 || deny "python3 not found, cannot check this command (fail-closed). Install python3 and retry."
 
