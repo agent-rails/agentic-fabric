@@ -217,4 +217,53 @@ expect allow "" "$(bash_payload $'gh pr checks $PR --watch' | bash "$DIR/gh-pr-m
 expect allow "" "$(bash_payload $'gh pr diff ${PR}' | bash "$DIR/gh-pr-create-gate.sh")" "everyday gh command with $ or braces allowed"
 expect allow "" "$(bash_payload $'gh pr diff ${PR}' | bash "$DIR/gh-pr-merge-gate.sh")" "everyday gh command with $ or braces allowed"
 
+
+quoted_marker=$(printf '%s\n' 'echo "<<'"'"'EOF'"'"'"' 'git checkout -b nope' 'EOF')
+expect deny 'prefixed "me/"' "$(CLAUDE_PLUGIN_OPTION_BRANCH_PREFIX=me/ prefix "$quoted_marker")" "heredoc marker inside quotes does not hide the next line"
+comment_marker=$(printf '%s\n' "# <<'EOF'" 'git checkout -b nope' 'EOF')
+expect deny 'prefixed "me/"' "$(CLAUDE_PLUGIN_OPTION_BRANCH_PREFIX=me/ prefix "$comment_marker")" "heredoc marker inside a comment does not hide the next line"
+real_heredoc=$(printf '%s\n' "cat > notes.md <<'EOF'" 'git checkout -b nope' 'EOF')
+expect allow "" "$(CLAUDE_PLUGIN_OPTION_BRANCH_PREFIX=me/ prefix "$real_heredoc")" "a real heredoc body is still data"
+
+LOGDIR=$WORK/logcap
+mkdir -p "$LOGDIR"
+head -c 6000000 /dev/zero | tr '\0' 'x' > "$LOGDIR/gate-decisions.jsonl"
+CLAUDE_PLUGIN_DATA=$LOGDIR GATE_LOG_MAX_BYTES=5000000 bash -c '. "$1"; GATE_PAYLOAD="{}"; log_gate_decision test allow probe' _ "$DIR/gate-decision-log.sh"
+[ -f "$LOGDIR/gate-decisions.jsonl.1" ] || fail "oversized decision log was not rotated"
+[ "$(wc -l < "$LOGDIR/gate-decisions.jsonl" | tr -d ' ')" = 1 ] || fail "new decision log should hold only the new record"
+ok "decision log rotates to .1 past its size limit"
+
+
+commit_heredoc=$(printf '%s\n' 'git commit -m "$(cat <<'"'"'EOF'"'"'' 'git checkout -b nope is only text here' 'EOF' ')"')
+expect allow "" "$(CLAUDE_PLUGIN_OPTION_BRANCH_PREFIX=me/ prefix "$commit_heredoc")" "commit message built from a heredoc is data"
+quoted_then_real=$(printf '%s\n' "echo '<<Z' && cat > f <<'EOF'" 'prose' 'EOF' 'git checkout -b nope')
+expect deny 'prefixed "me/"' "$(CLAUDE_PLUGIN_OPTION_BRANCH_PREFIX=me/ prefix "$quoted_then_real")" "a quoted marker before a real heredoc does not hide later commands"
+
+RACEDIR=$WORK/race
+mkdir -p "$RACEDIR"
+head -c 2000 /dev/zero | tr '\0' 'x' > "$RACEDIR/gate-decisions.jsonl"
+for i in $(seq 1 16); do
+  CLAUDE_PLUGIN_DATA=$RACEDIR GATE_LOG_MAX_BYTES=1000 bash -c 'set -euo pipefail; . "$1"; GATE_PAYLOAD="{}"; log_gate_decision race allow r'"$i"'; echo ok' _ "$DIR/gate-decision-log.sh" > "$RACEDIR/out.$i" 2>&1 &
+done
+wait
+for i in $(seq 1 16); do [ "$(cat "$RACEDIR/out.$i")" = ok ] || fail "logging under set -euo pipefail did not finish cleanly: $(cat "$RACEDIR/out.$i")"; done
+ok "concurrent logging with rotation never aborts the caller"
+
+LINKDIR=$WORK/link
+mkdir -p "$LINKDIR/elsewhere"
+head -c 2000 /dev/zero | tr '\0' 'x' > "$LINKDIR/gate-decisions.jsonl"
+ln -s "$LINKDIR/elsewhere" "$LINKDIR/gate-decisions.jsonl.1"
+CLAUDE_PLUGIN_DATA=$LINKDIR GATE_LOG_MAX_BYTES=1000 bash -c '. "$1"; GATE_PAYLOAD="{}"; log_gate_decision t allow x' _ "$DIR/gate-decision-log.sh"
+[ -z "$(ls -A "$LINKDIR/elsewhere")" ] || fail "rotation followed a symlinked .1 into another directory"
+ok "rotation never moves the log through a symlinked .1"
+
+for bad in abc 0; do
+  BADDIR=$WORK/bad-$bad
+  mkdir -p "$BADDIR"
+  printf 'x\n' > "$BADDIR/gate-decisions.jsonl"
+  CLAUDE_PLUGIN_DATA=$BADDIR GATE_LOG_MAX_BYTES=$bad bash -c '. "$1"; GATE_PAYLOAD="{}"; log_gate_decision t allow x' _ "$DIR/gate-decision-log.sh"
+  [ ! -e "$BADDIR/gate-decisions.jsonl.1" ] || fail "invalid limit $bad rotated a small log"
+done
+ok "an invalid size limit falls back to the default"
+
 echo "all $pass tests passed"

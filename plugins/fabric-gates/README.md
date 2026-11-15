@@ -19,14 +19,14 @@ Every hook reads the tool call's JSON on stdin and either prints a deny decision
 |---|---|---|---|---|---|---|
 | `gh-pr-create-gate.sh` | PreToolUse, `Bash` | `gh pr create` or `gh pr new` without `--draft`/`-d`, or with `--draft=false`; any command that mentions them but is not one plain invocation; creating a PR through `gh api` | blocks the call; a missing `jq` or a parser failure is a deny | the command | decision log | none |
 | `gh-pr-merge-gate.sh` | PreToolUse, `Bash` | `gh pr merge` on a draft PR, naming more than one PR or repository, or while GitHub's PR head lags the branch tip; any command that mentions it but is not one plain invocation; merging through `gh api` | blocks the call; a missing `jq` or a parser failure is a deny | the command; `gh pr view` / `gh api` for the PR | decision log | GitHub API via `gh` |
-| `enforce-branch-prefix.sh` | PreToolUse, `Bash` | a `git checkout -b/-B/--orphan`, `switch -c/-C/--create/--orphan`, `worktree add` (with `-b`, or a new branch named after the path) or `branch <name>` whose name lacks `branch_prefix`, or any branch creation while `branch_prefix` is unset; heredoc bodies are ignored | lets the call run (a naming convention, not a security boundary) | the command; settings | decision log | none |
+| `enforce-branch-prefix.sh` | PreToolUse, `Bash` | a `git checkout -b/-B/--orphan`, `switch -c/-C/--create/--orphan`, `worktree add` (with `-b`, or a new branch named after the path) or `branch <name>` whose name lacks `branch_prefix`, or any branch creation while `branch_prefix` is unset; heredoc bodies are ignored, but a `<<` inside quotes or a comment is not a heredoc | lets the call run (a naming convention, not a security boundary) | the command; settings | decision log | none |
 | `protect-gate-pages.sh` | PreToolUse, `Edit\|Write\|NotebookEdit` | an edit to a protected path without a fresh unlock | blocks the call | the target path; settings | decision log | none |
 
 Protected by default: `~/.claude/settings.json`, `~/.claude/settings.local.json`, `~/.claude/scripts`, `policies`, `agents`, `rules`, `skills`, `plugins` (installed plugin code and data), `~/.config/agentic-fabric`, and any `evals/review-convergence/` directory. Paths are compared by file identity (device and inode), so `~`, `..`, case, Unicode and symlink spellings of the same file are the same case.
 
 To edit a protected path on purpose, run `touch ~/.claude/gate-unlock` in your own terminal and retry within the unlock window.
 
-The decision log is `gate-decisions.jsonl` in the plugin's data directory. Each line holds the hook, the decision, a reason code, the session and tool-use IDs and a SHA-256 of the payload. It holds no command text or file content, except that `protect-gate-pages` records the protected path it matched.
+The decision log is `gate-decisions.jsonl` in the plugin's data directory. Each line holds the hook, the decision, a reason code, the session and tool-use IDs and a SHA-256 of the payload. It holds no command text or file content, except that `protect-gate-pages` records the protected path it matched. It rotates to `gate-decisions.jsonl.1` once it reaches 5 MB, so it never grows without bound.
 
 ## Settings
 

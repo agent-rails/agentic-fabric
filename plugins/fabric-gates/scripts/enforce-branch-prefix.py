@@ -105,15 +105,46 @@ def implicit_worktree_branch(args):
 HEREDOC = re.compile(r"<<-?\s*['\"]?([A-Za-z_][A-Za-z0-9_]*)['\"]?")
 
 
+def heredoc_operator(line):
+    """The heredoc operator's match when `<<` is a real shell operator on this line, not text inside quotes or a comment.
+
+    When the line cannot be tokenized (an unclosed quote, as in
+    `git commit -m "$(cat <<'EOF'`), the first textual match is used, as before.
+    Otherwise the match must carry the same delimiter as a real `<<` token.
+    """
+    matches = list(HEREDOC.finditer(line))
+    if not matches:
+        return None
+    lexer = shlex.shlex(line, posix=False, punctuation_chars=True)
+    lexer.whitespace_split = True
+    try:
+        tokens = list(lexer)
+    except ValueError:
+        return matches[0]
+    delimiters = set()
+    for index, token in enumerate(tokens):
+        if token.startswith("<<") and not token.startswith("<<<"):
+            rest = token.lstrip("<-")
+            if not rest and index + 1 < len(tokens):
+                rest = tokens[index + 1]
+            delimiters.add(rest.strip("'\""))
+    real = [match for match in matches if match.group(1) in delimiters]
+    return real[-1] if real else None
+
+
 def strip_heredocs(cmd):
-    """Drop heredoc bodies so prose inside them is not parsed as commands."""
+    """Drop heredoc bodies so prose inside them is not parsed as commands.
+
+    Only a `<<` the shell would treat as an operator starts a heredoc. A marker
+    inside quotes or a comment does not, so the lines after it are still checked.
+    """
     kept, closing = [], None
     for line in cmd.split("\n"):
         if closing is not None:
             if line.strip() == closing:
                 closing = None
             continue
-        match = HEREDOC.search(line)
+        match = heredoc_operator(line)
         if match:
             closing = match.group(1)
             line = line[: match.start()]

@@ -1,6 +1,6 @@
 {
   "name": "fabric-gates",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Hooks that keep an agent inside a review-first git workflow: draft-first PRs, merge only the reviewed head, branch prefix, and edits to the enforcement layer only with a human unlock.",
   "author": {
     "name": "agent-rails"
