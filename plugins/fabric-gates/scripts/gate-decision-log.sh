@@ -27,11 +27,16 @@ log_gate_decision() {
   if [ -L "$log" ] || { [ -e "$log" ] && [ ! -f "$log" ]; }; then
     return 0
   fi
-  local size limit="${GATE_LOG_MAX_BYTES:-5000000}"
-  size=0
-  [ -f "$log" ] && size=$(wc -c < "$log" 2>/dev/null | tr -d ' ')
-  if [ "${size:-0}" -ge "$limit" ] 2>/dev/null; then
-    mv -f "$log" "$log.1" 2>/dev/null || true
+  local size=0 limit="${GATE_LOG_MAX_BYTES:-5000000}"
+  case "$limit" in ''|*[!0-9]*|0) limit=5000000 ;; esac
+  if [ -f "$log" ]; then
+    size=$( { wc -c < "$log"; } 2>/dev/null | tr -d ' ') || size=0
+  fi
+  if [ "${size:-0}" -ge "$limit" ] 2>/dev/null && { [ ! -e "$log.1" ] || { [ -f "$log.1" ] && [ ! -L "$log.1" ]; }; }; then
+    if mkdir "$log.rotating" 2>/dev/null; then
+      mv -f "$log" "$log.1" 2>/dev/null || true
+      rmdir "$log.rotating" 2>/dev/null || true
+    fi
   fi
   digest=$(printf '%s' "$payload" | shasum -a 256 2>/dev/null | cut -d' ' -f1) || digest=""
   ts=$(date -u +%Y-%m-%dT%H:%M:%SZ) || ts=""
