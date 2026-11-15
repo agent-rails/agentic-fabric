@@ -1,0 +1,76 @@
+{
+  "name": "fabric-gates",
+  "version": "0.1.0",
+  "description": "Hooks that keep an agent inside a review-first git workflow: draft-first PRs, merge only the reviewed head, branch prefix, and edits to the enforcement layer only with a human unlock.",
+  "author": {
+    "name": "agent-rails"
+  },
+  "homepage": "https://github.com/agent-rails/agentic-fabric",
+  "repository": "https://github.com/agent-rails/agentic-fabric",
+  "license": "Apache-2.0",
+  "keywords": [
+    "hooks",
+    "guardrails",
+    "git",
+    "review"
+  ],
+  "userConfig": {
+    "branch_prefix": {
+      "type": "string",
+      "title": "Branch prefix",
+      "description": "Every branch the agent creates must start with this, for example me/. Branch creation is blocked until it is set.",
+      "required": true
+    },
+    "protected_paths": {
+      "type": "string",
+      "title": "Extra protected paths",
+      "description": "Comma-separated paths relative to your home directory that agents may not edit without an unlock, for example notes/review-rubric, standards/review.md.",
+      "default": ""
+    },
+    "gate_unlock_minutes": {
+      "type": "number",
+      "title": "Unlock window (minutes)",
+      "description": "How long `touch ~/.claude/gate-unlock` allows edits to protected paths. Clamped to 1-60.",
+      "default": 15,
+      "min": 1,
+      "max": 60
+    }
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/scripts/protect-gate-pages.sh",
+            "timeout": 5,
+            "onFailure": "block"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/scripts/gh-pr-create-gate.sh",
+            "timeout": 5,
+            "onFailure": "block"
+          },
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/scripts/gh-pr-merge-gate.sh",
+            "timeout": 10,
+            "onFailure": "block"
+          },
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/scripts/enforce-branch-prefix.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "agentic-fabric",
+  "description": "Evidence-backed guardrails for Claude Code agents. Install only the modules you want; customise through plugin options.",
+  "owner": {
+    "name": "agent-rails"
+  },
+  "plugins": [
+    {
+      "name": "fabric-gates",
+      "source": "./plugins/fabric-gates",
+      "description": "Draft-first PRs, merge only the reviewed head, branch prefix, and a human unlock for edits to the enforcement layer.",
+      "category": "security",
+      "version": "0.1.0"
+    }
+  ],
+  "version": "0.1.0"
+}
