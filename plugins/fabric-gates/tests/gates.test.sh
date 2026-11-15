@@ -217,4 +217,20 @@ expect allow "" "$(bash_payload $'gh pr checks $PR --watch' | bash "$DIR/gh-pr-m
 expect allow "" "$(bash_payload $'gh pr diff ${PR}' | bash "$DIR/gh-pr-create-gate.sh")" "everyday gh command with $ or braces allowed"
 expect allow "" "$(bash_payload $'gh pr diff ${PR}' | bash "$DIR/gh-pr-merge-gate.sh")" "everyday gh command with $ or braces allowed"
 
+
+quoted_marker=$(printf '%s\n' 'echo "<<'"'"'EOF'"'"'"' 'git checkout -b nope' 'EOF')
+expect deny 'prefixed "me/"' "$(CLAUDE_PLUGIN_OPTION_BRANCH_PREFIX=me/ prefix "$quoted_marker")" "heredoc marker inside quotes does not hide the next line"
+comment_marker=$(printf '%s\n' "# <<'EOF'" 'git checkout -b nope' 'EOF')
+expect deny 'prefixed "me/"' "$(CLAUDE_PLUGIN_OPTION_BRANCH_PREFIX=me/ prefix "$comment_marker")" "heredoc marker inside a comment does not hide the next line"
+real_heredoc=$(printf '%s\n' "cat > notes.md <<'EOF'" 'git checkout -b nope' 'EOF')
+expect allow "" "$(CLAUDE_PLUGIN_OPTION_BRANCH_PREFIX=me/ prefix "$real_heredoc")" "a real heredoc body is still data"
+
+LOGDIR=$WORK/logcap
+mkdir -p "$LOGDIR"
+head -c 6000000 /dev/zero | tr '\0' 'x' > "$LOGDIR/gate-decisions.jsonl"
+CLAUDE_PLUGIN_DATA=$LOGDIR GATE_LOG_MAX_BYTES=5000000 bash -c '. "$1"; GATE_PAYLOAD="{}"; log_gate_decision test allow probe' _ "$DIR/gate-decision-log.sh"
+[ -f "$LOGDIR/gate-decisions.jsonl.1" ] || fail "oversized decision log was not rotated"
+[ "$(wc -l < "$LOGDIR/gate-decisions.jsonl" | tr -d ' ')" = 1 ] || fail "new decision log should hold only the new record"
+ok "decision log rotates to .1 past its size limit"
+
 echo "all $pass tests passed"

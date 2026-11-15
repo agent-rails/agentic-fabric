@@ -105,15 +105,33 @@ def implicit_worktree_branch(args):
 HEREDOC = re.compile(r"<<-?\s*['\"]?([A-Za-z_][A-Za-z0-9_]*)['\"]?")
 
 
+def heredoc_operator(line):
+    """The heredoc operator's match when `<<` is a real shell operator on this line, not text inside quotes or a comment."""
+    match = HEREDOC.search(line)
+    if not match:
+        return None
+    lexer = shlex.shlex(line, posix=False, punctuation_chars=True)
+    lexer.whitespace_split = True
+    try:
+        tokens = list(lexer)
+    except ValueError:
+        return None
+    return match if any(token.startswith("<<") for token in tokens) else None
+
+
 def strip_heredocs(cmd):
-    """Drop heredoc bodies so prose inside them is not parsed as commands."""
+    """Drop heredoc bodies so prose inside them is not parsed as commands.
+
+    Only a `<<` the shell would treat as an operator starts a heredoc. A marker
+    inside quotes or a comment does not, so the lines after it are still checked.
+    """
     kept, closing = [], None
     for line in cmd.split("\n"):
         if closing is not None:
             if line.strip() == closing:
                 closing = None
             continue
-        match = HEREDOC.search(line)
+        match = heredoc_operator(line)
         if match:
             closing = match.group(1)
             line = line[: match.start()]

@@ -3,6 +3,9 @@
 # gate-decisions.jsonl in the plugin's data directory (${CLAUDE_PLUGIN_DATA}),
 # or in ~/.claude when the gates run outside a plugin.
 #
+# The log is rotated to gate-decisions.jsonl.1 once it reaches GATE_LOG_MAX_BYTES
+# (default 5 MB), so it never grows without bound.
+#
 # A gate must behave the same with or without logging, even under `set -eu`:
 # every step is guarded, and a missing jq, an unset HOME, or a log path that is
 # not a plain file (a symlink, FIFO or directory) skips the record.
@@ -23,6 +26,12 @@ log_gate_decision() {
   log="$dir/gate-decisions.jsonl"
   if [ -L "$log" ] || { [ -e "$log" ] && [ ! -f "$log" ]; }; then
     return 0
+  fi
+  local size limit="${GATE_LOG_MAX_BYTES:-5000000}"
+  size=0
+  [ -f "$log" ] && size=$(wc -c < "$log" 2>/dev/null | tr -d ' ')
+  if [ "${size:-0}" -ge "$limit" ] 2>/dev/null; then
+    mv -f "$log" "$log.1" 2>/dev/null || true
   fi
   digest=$(printf '%s' "$payload" | shasum -a 256 2>/dev/null | cut -d' ' -f1) || digest=""
   ts=$(date -u +%Y-%m-%dT%H:%M:%SZ) || ts=""
